@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { NewsArticle } from '../types';
+import { NewsArticle, Infographic, DataboksItem } from '../types';
 import { X, Plus, Trash2, Edit3, RefreshCw, CheckCircle, FileText, Image, Database } from 'lucide-react';
+import { initialData } from '../initialData';
 
 interface AdminCMSModalProps {
   articles: NewsArticle[];
@@ -36,7 +37,7 @@ export const AdminCMSModal: React.FC<AdminCMSModalProps> = ({ articles, onClose,
     setTimeout(() => setMessage(null), 3000);
   };
 
-  const handleCreateArticle = async (e: React.FormEvent) => {
+  const handleCreateArticle = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !category || !content) {
       showMessage('Judul, Kategori, dan Isi Berita wajib diisi!', 'error');
@@ -44,106 +45,113 @@ export const AdminCMSModal: React.FC<AdminCMSModalProps> = ({ articles, onClose,
     }
 
     try {
-      const res = await fetch('/api/news', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title,
-          category,
-          author,
-          image: imageUrl || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80',
-          snippet,
-          content,
-          isFeatured,
-          isPopular,
-          tags: tags ? tags.split(',').map(t => t.trim()) : [category],
-        }),
-      });
+      const saved = localStorage.getItem('asqi_articles');
+      const articlesList: NewsArticle[] = saved ? JSON.parse(saved) : [...articles];
 
-      const data = await res.json();
-      if (data.success) {
-        showMessage('Berita berhasil diterbitkan ke Backend Database!');
-        // Reset form
-        setTitle('');
-        setSnippet('');
-        setContent('');
-        setImageUrl('');
-        setTags('');
-        onRefreshData();
-      } else {
-        showMessage(data.message || 'Gagal membuat berita', 'error');
-      }
-    } catch (err) {
-      showMessage('Terjadi kesalahan koneksi API', 'error');
+      const newArticle: NewsArticle = {
+        id: 'art-' + Date.now(),
+        title,
+        category,
+        author: author || 'Tim Redaksi ASQI',
+        image: imageUrl || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80',
+        publishedAt: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase(),
+        views: 0,
+        snippet: snippet || content.substring(0, 150) + '...',
+        content,
+        isFeatured,
+        isPopular,
+        tags: tags ? tags.split(',').map(t => t.trim()) : [category],
+      };
+
+      articlesList.unshift(newArticle);
+      localStorage.setItem('asqi_articles', JSON.stringify(articlesList));
+
+      showMessage('Berita berhasil diterbitkan ke Penyimpanan Lokal!');
+      setTitle('');
+      setSnippet('');
+      setContent('');
+      setImageUrl('');
+      setTags('');
+      onRefreshData();
+    } catch {
+      showMessage('Terjadi kesalahan saat menyimpan berita', 'error');
     }
   };
 
-  const handleDeleteArticle = async (id: string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus berita ini dari database?')) return;
+  const handleDeleteArticle = (id: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus berita ini?')) return;
     try {
-      const res = await fetch(`/api/news/${id}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
-        showMessage('Berita berhasil dihapus!');
-        onRefreshData();
-      }
-    } catch (err) {
+      const saved = localStorage.getItem('asqi_articles');
+      let articlesList: NewsArticle[] = saved ? JSON.parse(saved) : [...articles];
+      articlesList = articlesList.filter((a) => a.id !== id);
+
+      localStorage.setItem('asqi_articles', JSON.stringify(articlesList));
+      showMessage('Berita berhasil dihapus!');
+      onRefreshData();
+    } catch {
       showMessage('Gagal menghapus berita', 'error');
     }
   };
 
-  const handleAddInfographic = async (e: React.FormEvent) => {
+  const handleAddInfographic = (e: React.FormEvent) => {
     e.preventDefault();
     if (!infoTitle || !infoImage) return;
     try {
-      const res = await fetch('/api/infographics', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: infoTitle, imageUrl: infoImage }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        showMessage('Infografik berhasil ditambahkan!');
-        setInfoTitle('');
-        setInfoImage('');
-        onRefreshData();
-      }
-    } catch (err) {
+      const saved = localStorage.getItem('asqi_infographics');
+      const infoList: Infographic[] = saved ? JSON.parse(saved) : initialData.infographics;
+
+      const newInfo: Infographic = {
+        id: 'info-' + Date.now(),
+        title: infoTitle,
+        imageUrl: infoImage,
+        createdAt: 'Terbaru',
+      };
+
+      localStorage.setItem('asqi_infographics', JSON.stringify([newInfo, ...infoList]));
+      showMessage('Infografik berhasil ditambahkan!');
+      setInfoTitle('');
+      setInfoImage('');
+      onRefreshData();
+    } catch {
       showMessage('Gagal menambah infografik', 'error');
     }
   };
 
-  const handleAddDataboks = async (e: React.FormEvent) => {
+  const handleAddDataboks = (e: React.FormEvent) => {
     e.preventDefault();
     if (!dataTitle) return;
     try {
-      const res = await fetch('/api/databoks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: dataTitle, description: dataDesc }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        showMessage('Item databoks berhasil ditambahkan!');
-        setDataTitle('');
-        setDataDesc('');
-        onRefreshData();
-      }
-    } catch (err) {
+      const saved = localStorage.getItem('asqi_databoks');
+      const databoksList: DataboksItem[] = saved ? JSON.parse(saved) : initialData.databoks;
+
+      const newItem: DataboksItem = {
+        id: 'data-' + Date.now(),
+        title: dataTitle,
+        category: 'Data Ekonomi',
+        description: dataDesc,
+      };
+
+      localStorage.setItem('asqi_databoks', JSON.stringify([newItem, ...databoksList]));
+      showMessage('Item databoks berhasil ditambahkan!');
+      setDataTitle('');
+      setDataDesc('');
+      onRefreshData();
+    } catch {
       showMessage('Gagal menambah item databoks', 'error');
     }
   };
 
-  const handleResetData = async () => {
-    if (!confirm('Reset seluruh berita ke data awal (Indonesian standard seed)?')) return;
+  const handleResetData = () => {
+    if (!confirm('Reset seluruh berita ke data awal sampel?')) return;
     try {
-      const res = await fetch('/api/seed', { method: 'POST' });
-      const data = await res.json();
-      if (data.success) {
-        showMessage('Database berita berhasil di-reset!');
-        onRefreshData();
-      }
-    } catch (err) {
+      localStorage.removeItem('asqi_articles');
+      localStorage.removeItem('asqi_carousel');
+      localStorage.removeItem('asqi_infographics');
+      localStorage.removeItem('asqi_databoks');
+      localStorage.removeItem('asqi_videos');
+      showMessage('Database berita berhasil di-reset!');
+      onRefreshData();
+    } catch {
       showMessage('Gagal reset database', 'error');
     }
   };

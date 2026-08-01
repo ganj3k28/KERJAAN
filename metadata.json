@@ -1,6 +1,6 @@
 {
   "name": "ASQI NEWS.com - Portal Berita & CMS",
-  "description": "Portal berita profesional ASQI NEWS.com dengan Express Node.js backend, REST API lengkap, pencarian berita, filter kategori, dan Panel Admin CMS.",
+  "description": "Portal berita profesional ASQI NEWS.com dengan pencarian berita, filter kategori, dan Panel Admin CMS dengan penyimpanan lokal.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -15,12 +15,50 @@ import { SubscribeModal } from './components/SubscribeModal';
 import { VideoModal } from './components/VideoModal';
 
 export default function App() {
-  const [articles, setArticles] = useState<NewsArticle[]>(initialData.articles);
-  const [carouselSlides, setCarouselSlides] = useState<NewsArticle[]>(initialData.carousel);
-  const [popularArticles, setPopularArticles] = useState<NewsArticle[]>(initialData.articles);
-  const [infographics, setInfographics] = useState<Infographic[]>(initialData.infographics);
-  const [databoksItems, setDataboksItems] = useState<DataboksItem[]>(initialData.databoks);
-  const [videos, setVideos] = useState<VideoItem[]>(initialData.videos);
+  const [allArticles, setAllArticles] = useState<NewsArticle[]>(() => {
+    try {
+      const saved = localStorage.getItem('asqi_articles');
+      return saved ? JSON.parse(saved) : initialData.articles;
+    } catch {
+      return initialData.articles;
+    }
+  });
+
+  const [carouselSlides, setCarouselSlides] = useState<NewsArticle[]>(() => {
+    try {
+      const saved = localStorage.getItem('asqi_carousel');
+      return saved ? JSON.parse(saved) : initialData.carousel;
+    } catch {
+      return initialData.carousel;
+    }
+  });
+
+  const [infographics, setInfographics] = useState<Infographic[]>(() => {
+    try {
+      const saved = localStorage.getItem('asqi_infographics');
+      return saved ? JSON.parse(saved) : initialData.infographics;
+    } catch {
+      return initialData.infographics;
+    }
+  });
+
+  const [databoksItems, setDataboksItems] = useState<DataboksItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('asqi_databoks');
+      return saved ? JSON.parse(saved) : initialData.databoks;
+    } catch {
+      return initialData.databoks;
+    }
+  });
+
+  const [videos, setVideos] = useState<VideoItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('asqi_videos');
+      return saved ? JSON.parse(saved) : initialData.videos;
+    } catch {
+      return initialData.videos;
+    }
+  });
 
   // Router path state (/ or /admin)
   const [currentPath, setCurrentPath] = useState<string>(() => window.location.pathname);
@@ -50,49 +88,49 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Fetch API data from Express backend
-  const fetchBackendData = useCallback(async () => {
+  // Sync data from localStorage
+  const refreshLocalData = useCallback(() => {
     try {
-      // Fetch articles with current category & search filters
-      let newsUrl = '/api/news';
-      const params = new URLSearchParams();
-      if (activeCategory && activeCategory !== 'Telaah') {
-        params.append('category', activeCategory);
-      }
-      if (searchQuery) {
-        params.append('search', searchQuery);
-      }
-      if (params.toString()) {
-        newsUrl += `?${params.toString()}`;
-      }
+      const savedArt = localStorage.getItem('asqi_articles');
+      if (savedArt) setAllArticles(JSON.parse(savedArt));
 
-      const [resNews, resCarousel, resPopular, resInfo, resData, resVid] = await Promise.all([
-        fetch(newsUrl).then((r) => r.json()),
-        fetch('/api/carousel').then((r) => r.json()),
-        fetch('/api/popular').then((r) => r.json()),
-        fetch('/api/infographics').then((r) => r.json()),
-        fetch('/api/databoks').then((r) => r.json()),
-        fetch('/api/videos').then((r) => r.json()),
-      ]);
+      const savedCar = localStorage.getItem('asqi_carousel');
+      if (savedCar) setCarouselSlides(JSON.parse(savedCar));
 
-      if (resNews.success) setArticles(resNews.articles);
-      if (resCarousel.success) setCarouselSlides(resCarousel.slides);
-      if (resPopular.success) setPopularArticles(resPopular.popular);
-      if (resInfo.success) setInfographics(resInfo.infographics);
-      if (resData.success) setDataboksItems(resData.databoks);
-      if (resVid.success) setVideos(resVid.videos);
-    } catch (err) {
-      console.warn('Fallback to local state (API connecting...):', err);
+      const savedInfo = localStorage.getItem('asqi_infographics');
+      if (savedInfo) setInfographics(JSON.parse(savedInfo));
+
+      const savedData = localStorage.getItem('asqi_databoks');
+      if (savedData) setDataboksItems(JSON.parse(savedData));
+
+      const savedVid = localStorage.getItem('asqi_videos');
+      if (savedVid) setVideos(JSON.parse(savedVid));
+    } catch (e) {
+      console.error('Error reading localStorage:', e);
     }
-  }, [activeCategory, searchQuery]);
+  }, []);
 
-  useEffect(() => {
-    fetchBackendData();
-  }, [fetchBackendData]);
+  // Filter articles according to category and search query
+  const filteredArticles = allArticles.filter((art) => {
+    const matchesCategory =
+      activeCategory === 'Telaah' ||
+      !activeCategory ||
+      art.category.toLowerCase() === activeCategory.toLowerCase();
+
+    const matchesSearch =
+      !searchQuery ||
+      art.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      art.snippet.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      art.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (art.tags && art.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase())));
+
+    return matchesCategory && matchesSearch;
+  });
+
+  const popularArticles = allArticles.filter((art) => art.isPopular);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchBackendData();
   };
 
   const handleClearFilter = () => {
@@ -104,8 +142,8 @@ export default function App() {
   if (currentPath === '/admin' || currentPath.startsWith('/admin')) {
     return (
       <AdminPage
-        articles={articles}
-        onRefreshData={fetchBackendData}
+        articles={allArticles}
+        onRefreshData={refreshLocalData}
         onNavigateHome={() => navigateTo('/')}
       />
     );
@@ -151,7 +189,7 @@ export default function App() {
 
           {/* Berita Terbaru Feed */}
           <NewsFeedSection
-            articles={articles}
+            articles={filteredArticles}
             databoksItems={databoksItems}
             activeCategory={activeCategory}
             searchQuery={searchQuery}
@@ -230,10 +268,10 @@ export default function App() {
 
           <div>
             <h4 style={{ color: '#ffffff', fontSize: '14px', fontWeight: 700, marginBottom: '12px' }}>
-              SISTEM BACKEND &amp; API
+              PANEL ADMIN CMS
             </h4>
             <p style={{ fontSize: '12px', lineHeight: 1.6, marginBottom: '10px' }}>
-              Node.js + Express API Backend dengan arsitektur RESTful &amp; Firestore/JSON store.
+              Sistem Manajemen Konten (CMS) Berita dengan penyimpanan lokal terintegrasi.
             </p>
             <a
               href="/admin"

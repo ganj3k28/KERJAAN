@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Lock, UserCheck, Key, LogOut, ExternalLink, Plus, Trash2, Edit, RefreshCw, Layers, FileText, BarChart2, Users, AlertCircle, CheckCircle } from 'lucide-react';
 import { NewsArticle, Infographic, DataboksItem, AdminUser, AdminRole } from '../types';
+import { initialData } from '../initialData';
+
+const DEFAULT_ADMIN_USERS: AdminUser[] = [
+  { id: 'usr-1', username: 'admin', name: 'Super Admin ASQI', role: 'superadmin' },
+  { id: 'usr-2', username: 'editor', name: 'Chief Editor', role: 'editor' },
+  { id: 'usr-3', username: 'jurnalis', name: 'Jurnalis Senior', role: 'author' },
+];
 
 interface AdminPageProps {
   articles: NewsArticle[];
@@ -75,43 +82,55 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     }
   }, [user]);
 
-  const fetchAdminUsers = async () => {
+  const fetchAdminUsers = () => {
     try {
-      const res = await fetch('/api/admin/users').then((r) => r.json());
-      if (res.success) {
-        setAdminUsers(res.users);
+      const saved = localStorage.getItem('asqi_admin_users');
+      if (saved) {
+        setAdminUsers(JSON.parse(saved));
+      } else {
+        localStorage.setItem('asqi_admin_users', JSON.stringify(DEFAULT_ADMIN_USERS));
+        setAdminUsers(DEFAULT_ADMIN_USERS);
       }
     } catch (err) {
-      console.error('Failed to fetch admin users:', err);
+      console.error('Failed to load admin users from localStorage:', err);
     }
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
     setIsSubmittingLogin(true);
 
-    try {
-      const res = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: loginUsername, password: loginPassword }),
-      });
-      const data = await res.json();
+    setTimeout(() => {
+      try {
+        const savedUsersStr = localStorage.getItem('asqi_admin_users');
+        const usersList: AdminUser[] = savedUsersStr ? JSON.parse(savedUsersStr) : DEFAULT_ADMIN_USERS;
 
-      if (data.success) {
-        setUser(data.user);
-        setAuthor(data.user.name);
-        localStorage.setItem('asqi_admin_user', JSON.stringify(data.user));
-        setMsg({ type: 'success', text: `Selamat datang kembali, ${data.user.name}!` });
-      } else {
-        setLoginError(data.message || 'Login gagal');
+        let matchedUser: AdminUser | undefined;
+        if (loginUsername === 'admin' && loginPassword === 'admin123') {
+          matchedUser = DEFAULT_ADMIN_USERS[0];
+        } else if (loginUsername === 'editor' && loginPassword === 'editor123') {
+          matchedUser = DEFAULT_ADMIN_USERS[1];
+        } else if (loginUsername === 'jurnalis' && loginPassword === 'jurnalis123') {
+          matchedUser = DEFAULT_ADMIN_USERS[2];
+        } else {
+          matchedUser = usersList.find((u) => u.username === loginUsername);
+        }
+
+        if (matchedUser) {
+          setUser(matchedUser);
+          setAuthor(matchedUser.name);
+          localStorage.setItem('asqi_admin_user', JSON.stringify(matchedUser));
+          setMsg({ type: 'success', text: `Selamat datang kembali, ${matchedUser.name}!` });
+        } else {
+          setLoginError('Username atau password tidak valid. Silakan gunakan akun demo yang tersedia.');
+        }
+      } catch {
+        setLoginError('Terjadi kesalahan saat memproses login.');
+      } finally {
+        setIsSubmittingLogin(false);
       }
-    } catch {
-      setLoginError('Gagal terhubung ke backend server Express.');
-    } finally {
-      setIsSubmittingLogin(false);
-    }
+    }, 200);
   };
 
   const fillQuickLogin = (uname: string, pass: string) => {
@@ -126,51 +145,60 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     setMsg(null);
   };
 
-  const handleSaveArticle = async (e: React.FormEvent) => {
+  const handleSaveArticle = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !category || !content) {
       setMsg({ type: 'error', text: 'Judul, Kategori, dan Isi Berita wajib diisi!' });
       return;
     }
 
-    const payload = {
-      title,
-      category,
-      snippet: snippet || content.substring(0, 150) + '...',
-      content,
-      author: author || (user ? user.name : 'Redaksi ASQI NEWS'),
-      image: image || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80',
-      isFeatured,
-      isPopular,
-      tags: tags ? tags.split(',').map((t) => t.trim()) : [category],
-    };
-
     try {
-      let res;
+      const savedArticlesStr = localStorage.getItem('asqi_articles');
+      let articlesList: NewsArticle[] = savedArticlesStr ? JSON.parse(savedArticlesStr) : [...articles];
+
       if (editingArticleId) {
-        res = await fetch(`/api/news/${editingArticleId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+        articlesList = articlesList.map((art) => {
+          if (art.id === editingArticleId) {
+            return {
+              ...art,
+              title,
+              category,
+              snippet: snippet || content.substring(0, 150) + '...',
+              content,
+              author: author || (user ? user.name : 'Redaksi ASQI NEWS'),
+              image: image || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80',
+              isFeatured,
+              isPopular,
+              tags: tags ? tags.split(',').map((t) => t.trim()) : [category],
+            };
+          }
+          return art;
         });
+        setMsg({ type: 'success', text: 'Berita berhasil diperbarui!' });
       } else {
-        res = await fetch('/api/news', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
+        const newArticle: NewsArticle = {
+          id: 'art-' + Date.now(),
+          title,
+          category,
+          publishedAt: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase() + ', ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+          views: 1,
+          snippet: snippet || content.substring(0, 150) + '...',
+          content,
+          author: author || (user ? user.name : 'Redaksi ASQI NEWS'),
+          image: image || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80',
+          isFeatured,
+          isPopular,
+          tags: tags ? tags.split(',').map((t) => t.trim()) : [category],
+        };
+        articlesList.unshift(newArticle);
+        setMsg({ type: 'success', text: 'Berita baru berhasil diterbitkan!' });
       }
 
-      const data = await res.json();
-      if (data.success) {
-        setMsg({ type: 'success', text: editingArticleId ? 'Berita berhasil diperbarui!' : 'Berita baru berhasil diterbitkan!' });
-        resetArticleForm();
-        onRefreshData();
-      } else {
-        setMsg({ type: 'error', text: data.message || 'Gagal menyimpan berita' });
-      }
+      localStorage.setItem('asqi_articles', JSON.stringify(articlesList));
+      resetArticleForm();
+      onRefreshData();
     } catch {
-      setMsg({ type: 'error', text: 'Terjadi kesalahan koneksi saat menyimpan berita' });
+      setMsg({ type: 'error', text: 'Gagal menyimpan berita ke penyimpanan lokal' });
     }
   };
 
@@ -188,17 +216,16 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDeleteArticle = async (id: string) => {
+  const handleDeleteArticle = (id: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus artikel berita ini?')) return;
     try {
-      const res = await fetch(`/api/news/${id}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
-        setMsg({ type: 'success', text: 'Artikel berhasil dihapus' });
-        onRefreshData();
-      } else {
-        setMsg({ type: 'error', text: data.message });
-      }
+      const savedArticlesStr = localStorage.getItem('asqi_articles');
+      let articlesList: NewsArticle[] = savedArticlesStr ? JSON.parse(savedArticlesStr) : [...articles];
+      articlesList = articlesList.filter((art) => art.id !== id);
+
+      localStorage.setItem('asqi_articles', JSON.stringify(articlesList));
+      setMsg({ type: 'success', text: 'Artikel berhasil dihapus' });
+      onRefreshData();
     } catch {
       setMsg({ type: 'error', text: 'Gagal menghapus artikel' });
     }
@@ -216,50 +243,60 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     setTags('');
   };
 
-  const handleAddInfographic = async (e: React.FormEvent) => {
+  const handleAddInfographic = (e: React.FormEvent) => {
     e.preventDefault();
     if (!infoTitle || !infoImageUrl) return;
     try {
-      const res = await fetch('/api/infographics', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: infoTitle, imageUrl: infoImageUrl }),
-      }).then((r) => r.json());
+      const savedInfoStr = localStorage.getItem('asqi_infographics');
+      const infographicsList: Infographic[] = savedInfoStr ? JSON.parse(savedInfoStr) : initialData.infographics;
 
-      if (res.success) {
-        setMsg({ type: 'success', text: 'Infografik baru berhasil ditambahkan' });
-        setInfoTitle('');
-        setInfoImageUrl('');
-        onRefreshData();
-      }
+      const newInfo: Infographic = {
+        id: 'info-' + Date.now(),
+        title: infoTitle,
+        imageUrl: infoImageUrl,
+        createdAt: 'Terbaru',
+      };
+
+      const updated = [newInfo, ...infographicsList];
+      localStorage.setItem('asqi_infographics', JSON.stringify(updated));
+
+      setMsg({ type: 'success', text: 'Infografik baru berhasil ditambahkan' });
+      setInfoTitle('');
+      setInfoImageUrl('');
+      onRefreshData();
     } catch {
       setMsg({ type: 'error', text: 'Gagal menambahkan infografik' });
     }
   };
 
-  const handleAddDataboks = async (e: React.FormEvent) => {
+  const handleAddDataboks = (e: React.FormEvent) => {
     e.preventDefault();
     if (!dataTitle) return;
     try {
-      const res = await fetch('/api/databoks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: dataTitle, category: dataCategory || 'Data Ekonomi', description: dataDesc }),
-      }).then((r) => r.json());
+      const savedDataStr = localStorage.getItem('asqi_databoks');
+      const databoksList: DataboksItem[] = savedDataStr ? JSON.parse(savedDataStr) : initialData.databoks;
 
-      if (res.success) {
-        setMsg({ type: 'success', text: 'Item Databoks berhasil ditambahkan' });
-        setDataTitle('');
-        setDataCategory('');
-        setDataDesc('');
-        onRefreshData();
-      }
+      const newItem: DataboksItem = {
+        id: 'data-' + Date.now(),
+        title: dataTitle,
+        category: dataCategory || 'Data Ekonomi',
+        description: dataDesc,
+      };
+
+      const updated = [newItem, ...databoksList];
+      localStorage.setItem('asqi_databoks', JSON.stringify(updated));
+
+      setMsg({ type: 'success', text: 'Item Databoks berhasil ditambahkan' });
+      setDataTitle('');
+      setDataCategory('');
+      setDataDesc('');
+      onRefreshData();
     } catch {
       setMsg({ type: 'error', text: 'Gagal menambahkan databoks' });
     }
   };
 
-  const handleCreateUser = async (e: React.FormEvent) => {
+  const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUsername || !newPassword || !newName) {
       setMsg({ type: 'error', text: 'Isi semua data pengguna baru' });
@@ -267,57 +304,64 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     }
 
     try {
-      const res = await fetch('/api/admin/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: newUsername,
-          password: newPassword,
-          name: newName,
-          role: newRole,
-        }),
-      }).then((r) => r.json());
+      const savedUsersStr = localStorage.getItem('asqi_admin_users');
+      const usersList: AdminUser[] = savedUsersStr ? JSON.parse(savedUsersStr) : DEFAULT_ADMIN_USERS;
 
-      if (res.success) {
-        setMsg({ type: 'success', text: `Pengguna admin baru (${newUsername}) berhasil dibuat!` });
-        setNewUsername('');
-        setNewPassword('');
-        setNewName('');
-        setNewRole('editor');
-        fetchAdminUsers();
-      } else {
-        setMsg({ type: 'error', text: res.message || 'Gagal membuat pengguna' });
+      if (usersList.some((u) => u.username === newUsername)) {
+        setMsg({ type: 'error', text: `Username '${newUsername}' sudah digunakan!` });
+        return;
       }
+
+      const newUser: AdminUser = {
+        id: 'usr-' + Date.now(),
+        username: newUsername,
+        name: newName,
+        role: newRole,
+      };
+
+      const updated = [...usersList, newUser];
+      localStorage.setItem('asqi_admin_users', JSON.stringify(updated));
+
+      setMsg({ type: 'success', text: `Pengguna admin baru (${newUsername}) berhasil dibuat!` });
+      setNewUsername('');
+      setNewPassword('');
+      setNewName('');
+      setNewRole('editor');
+      fetchAdminUsers();
     } catch {
-      setMsg({ type: 'error', text: 'Gagal menghubungi server untuk menambah pengguna' });
+      setMsg({ type: 'error', text: 'Gagal menambah akun pengguna admin' });
     }
   };
 
-  const handleDeleteUser = async (id: string) => {
+  const handleDeleteUser = (id: string) => {
     if (!confirm('Hapus akses akun admin ini?')) return;
     try {
-      const res = await fetch(`/api/admin/users/${id}`, { method: 'DELETE' }).then((r) => r.json());
-      if (res.success) {
-        setMsg({ type: 'success', text: 'Pengguna berhasil dihapus' });
-        fetchAdminUsers();
-      } else {
-        setMsg({ type: 'error', text: res.message });
-      }
+      const savedUsersStr = localStorage.getItem('asqi_admin_users');
+      let usersList: AdminUser[] = savedUsersStr ? JSON.parse(savedUsersStr) : DEFAULT_ADMIN_USERS;
+      usersList = usersList.filter((u) => u.id !== id);
+
+      localStorage.setItem('asqi_admin_users', JSON.stringify(usersList));
+      setMsg({ type: 'success', text: 'Pengguna berhasil dihapus' });
+      fetchAdminUsers();
     } catch {
       setMsg({ type: 'error', text: 'Gagal menghapus akun pengguna' });
     }
   };
 
-  const handleResetSeed = async () => {
-    if (!confirm('RESET DATABASE: Semua data berita akan di-reset ke data awal sampel?')) return;
+  const handleResetSeed = () => {
+    if (!confirm('RESET SIMPANAN: Semua data berita akan di-reset ke data awal sampel?')) return;
     try {
-      const res = await fetch('/api/seed', { method: 'POST' }).then((r) => r.json());
-      if (res.success) {
-        setMsg({ type: 'success', text: 'Database berhasil di-reset ke data sampel awal!' });
-        onRefreshData();
-      }
+      localStorage.removeItem('asqi_articles');
+      localStorage.removeItem('asqi_carousel');
+      localStorage.removeItem('asqi_infographics');
+      localStorage.removeItem('asqi_databoks');
+      localStorage.removeItem('asqi_videos');
+      localStorage.removeItem('asqi_admin_users');
+      setMsg({ type: 'success', text: 'Data berhasil di-reset ke sampel awal!' });
+      onRefreshData();
+      fetchAdminUsers();
     } catch {
-      setMsg({ type: 'error', text: 'Gagal me-reset database' });
+      setMsg({ type: 'error', text: 'Gagal me-reset data' });
     }
   };
 
@@ -361,7 +405,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
               A S Q I NEWS<span style={{ color: '#38bdf8' }}>.com</span>
             </h1>
             <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>
-              Sistem Autentikasi Admin &amp; Hak Akses Berberda (Express Backend API)
+              Sistem Autentikasi Admin &amp; Hak Akses Berbeda (CMS Client-Side)
             </p>
           </div>
 
