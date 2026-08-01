@@ -305,26 +305,14 @@ export default function App() {
 
           <div>
             <h4 style={{ color: '#ffffff', fontSize: '14px', fontWeight: 700, marginBottom: '12px' }}>
-              PANEL ADMIN CMS
+              REDAKSI &amp; LAYANAN
             </h4>
-            <p style={{ fontSize: '12px', lineHeight: 1.6, marginBottom: '10px' }}>
-              Sistem Manajemen Konten (CMS) Berita dengan penyimpanan lokal terintegrasi.
-            </p>
-            <a
-              href="/admin"
-              onClick={(e) => {
-                e.preventDefault();
-                navigateTo('/admin');
-              }}
-              style={{
-                color: '#38bdf8',
-                fontSize: '12px',
-                fontWeight: 600,
-                textDecoration: 'underline',
-              }}
-            >
-              Akses Admin Portal (/admin)
-            </a>
+            <ul style={{ listStyle: 'none', fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '8px', color: '#94a3b8' }}>
+              <li>Tentang ASQI NEWS</li>
+              <li>Pedoman Media Siber</li>
+              <li>Siber &amp; Hak Cipta</li>
+              <li>Layanan Informasi Data</li>
+            </ul>
           </div>
         </div>
 

@@ -1,5 +1,4 @@
 import React from 'react';
-import { Search, Settings, ShieldCheck } from 'lucide-react';
 
 interface HeaderProps {
   searchQuery: string;
@@ -24,7 +23,7 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="top-header">
       <div className="top-header-container">
         <div className="logo" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <a href="/">A S Q I NEWS<span>.com</span></a>
+          <a href="/" onClick={(e) => { e.preventDefault(); window.location.href = '/'; }}>A S Q I NEWS<span>.com</span></a>
         </div>
 
         <form onSubmit={onSearchSubmit} className="search-box">
@@ -46,3 +45,4 @@ export const Header: React.FC<HeaderProps> = ({
     </header>
   );
 };
+
