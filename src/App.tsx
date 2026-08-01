@@ -13,6 +13,7 @@ import { ArticleModal } from './components/ArticleModal';
 import { AdminPage } from './components/AdminPage';
 import { SubscribeModal } from './components/SubscribeModal';
 import { VideoModal } from './components/VideoModal';
+import { Logo } from './components/Logo';
 
 export default function App() {
   const [allArticles, setAllArticles] = useState<NewsArticle[]>(() => {
@@ -344,8 +345,8 @@ export default function App() {
           }}
         >
           <div>
-            <div style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', marginBottom: '10px' }}>
-              A S Q I NEWS<span style={{ color: '#38bdf8', fontWeight: 400 }}>.com</span>
+            <div style={{ marginBottom: '12px' }}>
+              <Logo height={38} />
             </div>
             <p style={{ fontSize: '13px', lineHeight: 1.6 }}>
               Portal berita ekonomi, bisnis, investasi, dan teknologi terkemuka dengan analisis data mendalam serta liputan independen berstandar jurnalisme profesional.

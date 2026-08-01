@@ -1,4 +1,5 @@
 import React from 'react';
+import { Logo } from './Logo';
 
 interface HeaderProps {
   searchQuery: string;
@@ -22,8 +23,10 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="top-header">
       <div className="top-header-container">
-        <div className="logo" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <a href="/" onClick={(e) => { e.preventDefault(); window.location.href = '/'; }}>A S Q I NEWS<span>.com</span></a>
+        <div className="logo" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+          <a href="/" onClick={(e) => { e.preventDefault(); window.location.href = '/'; }} style={{ display: 'inline-flex', alignItems: 'center' }}>
+            <Logo height={38} />
+          </a>
         </div>
 
         <form onSubmit={onSearchSubmit} className="search-box">

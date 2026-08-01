@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Shield, Lock, UserCheck, Key, LogOut, ExternalLink, Plus, Trash2, Edit, RefreshCw, Layers, FileText, BarChart2, Users, AlertCircle, CheckCircle } from 'lucide-react';
 import { NewsArticle, Infographic, DataboksItem, AdminUser, AdminRole } from '../types';
 import { initialData } from '../initialData';
+import { Logo } from './Logo';
 
 const DEFAULT_ADMIN_USERS: AdminUser[] = [
   { id: 'usr-1', username: 'admin', name: 'Super Admin ASQI', role: 'superadmin' },
@@ -457,9 +458,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({
             <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#ffffff', marginBottom: '12px' }}>
               <Shield size={24} />
             </div>
-            <h1 style={{ fontSize: '22px', fontWeight: 800, margin: '0 0 6px 0', color: '#ffffff' }}>
-              A S Q I NEWS<span style={{ color: '#38bdf8' }}>.com</span>
-            </h1>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px' }}>
+              <Logo height={42} />
+            </div>
             <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>
               Sistem Autentikasi Admin &amp; Hak Akses Berbeda (CMS Client-Side)
             </p>
@@ -580,8 +581,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({
       {/* Top Navbar Header */}
       <header style={{ backgroundColor: '#1e293b', borderBottom: '1px solid #334155', padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff' }}>
-            A S Q I NEWS<span style={{ color: '#38bdf8' }}>.com</span> CMS
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Logo height={32} />
+            <span style={{ color: '#94a3b8', fontSize: '13px', fontWeight: 700 }}>CMS</span>
           </div>
           <span style={{ backgroundColor: '#0369a1', color: '#e0f2fe', padding: '3px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600 }}>
             Domain Routing /admin
