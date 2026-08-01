@@ -60,8 +60,35 @@ export default function App() {
     }
   });
 
+  // Helper function to detect if admin route is requested anywhere (path, hash, or query)
+  const checkIsAdmin = useCallback(() => {
+    if (typeof window === 'undefined') return false;
+    const pathname = (window.location.pathname || '').toLowerCase();
+    const hash = (window.location.hash || '').toLowerCase();
+    const search = (window.location.search || '').toLowerCase();
+
+    return (
+      pathname.includes('/admin') ||
+      pathname === 'admin' ||
+      hash.includes('admin') ||
+      search.includes('admin')
+    );
+  }, []);
+
   // Router path state (/ or /admin)
-  const [currentPath, setCurrentPath] = useState<string>(() => window.location.pathname);
+  const [currentPath, setCurrentPath] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const pathname = window.location.pathname || '';
+      const hash = window.location.hash || '';
+      const search = window.location.search || '';
+
+      if (pathname.includes('/admin') || hash.includes('admin') || search.includes('admin')) {
+        return '/admin';
+      }
+      return pathname || '/';
+    }
+    return '/';
+  });
 
   // Filter & Search states
   const [activeCategory, setActiveCategory] = useState<string>('Telaah');
@@ -75,12 +102,43 @@ export default function App() {
 
   // Router listener
   useEffect(() => {
-    const handlePopState = () => {
-      setCurrentPath(window.location.pathname);
+    const handleLocationChange = () => {
+      if (checkIsAdmin()) {
+        setCurrentPath('/admin');
+      } else {
+        setCurrentPath(window.location.pathname || '/');
+      }
     };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+
+    window.addEventListener('popstate', handleLocationChange);
+    window.addEventListener('hashchange', handleLocationChange);
+
+    // Keyboard shortcut (Ctrl + Shift + A or Cmd + Shift + A) to open admin
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+        e.preventDefault();
+        navigateTo('/admin');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    // Continuous location check for dynamic SPAs and hash/query updates
+    const timer = setInterval(() => {
+      const isAdminNow = checkIsAdmin();
+      if (isAdminNow && currentPath !== '/admin') {
+        setCurrentPath('/admin');
+      } else if (!isAdminNow && currentPath === '/admin' && !window.location.pathname.includes('/admin')) {
+        setCurrentPath(window.location.pathname || '/');
+      }
+    }, 200);
+
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+      window.removeEventListener('hashchange', handleLocationChange);
+      window.removeEventListener('keydown', handleKeyDown);
+      clearInterval(timer);
+    };
+  }, [checkIsAdmin, currentPath]);
 
   const navigateTo = (path: string) => {
     window.history.pushState({}, '', path);
@@ -175,8 +233,11 @@ export default function App() {
     setSearchQuery('');
   };
 
+  const normalizedPath = currentPath.toLowerCase().trim();
+  const isAdminRoute = normalizedPath.includes('/admin') || normalizedPath === 'admin';
+
   // Dedicated Route for /admin
-  if (currentPath === '/admin' || currentPath.startsWith('/admin')) {
+  if (isAdminRoute) {
     return (
       <AdminPage
         articles={allArticles}
