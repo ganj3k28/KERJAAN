@@ -1,0 +1,50 @@
+{
+  "entities": {
+    "NewsArticle": {
+      "title": "News Article",
+      "description": "Berita ASQI NEWS",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "publishedAt": { "type": "string" },
+        "views": { "type": "number" },
+        "snippet": { "type": "string" },
+        "content": { "type": "string" },
+        "author": { "type": "string" },
+        "image": { "type": "string" },
+        "imageCaption": { "type": "string" },
+        "middleImage": { "type": "string" },
+        "middleImageCaption": { "type": "string" },
+        "galleryImages": { "type": "array" },
+        "isFeatured": { "type": "boolean" },
+        "isPopular": { "type": "boolean" },
+        "tags": { "type": "array" }
+      },
+      "required": ["id", "title", "category", "content"]
+    }
+  },
+  "firestore": {
+    "/articles/{articleId}": {
+      "schema": "NewsArticle",
+      "description": "Koleksi berita publik"
+    },
+    "/infographics/{infographicId}": {
+      "schema": "Infographic",
+      "description": "Koleksi infografik"
+    },
+    "/databoks/{databoksId}": {
+      "schema": "DataboksItem",
+      "description": "Koleksi databoks"
+    },
+    "/videos/{videoId}": {
+      "schema": "VideoItem",
+      "description": "Koleksi video"
+    },
+    "/users/{userId}": {
+      "schema": "AdminUser",
+      "description": "Pengguna admin"
+    }
+  }
+}

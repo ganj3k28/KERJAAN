@@ -3,17 +3,33 @@ import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
+import { initializeApp } from 'firebase/app';
+import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import firebaseConfig from './firebase-applet-config.json';
 import { initialData } from './src/initialData';
 import { AdminUser, NewsArticle, Infographic, DataboksItem } from './src/types';
 
 const app = express();
 const PORT = 3000;
 
+// Initialize Firebase Firestore Cloud Database
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
+
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Ensure data directory exists
+// Prevent browser caching for all API endpoints so all browsers get instant live news
+app.use('/api', (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('Surrogate-Control', 'no-store');
+  next();
+});
+
+// Ensure local data directory exists
 const DATA_DIR = path.join(process.cwd(), 'data');
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -68,11 +84,76 @@ function saveUsersData(users: AdminUser[]) {
   }
 }
 
+// Sync memory store with Firestore Cloud Database
+async function syncFromFirestore() {
+  try {
+    // 1. Articles
+    const articlesSnap = await getDocs(collection(db, 'articles'));
+    let articles: NewsArticle[] = [];
+    if (!articlesSnap.empty) {
+      articles = articlesSnap.docs.map((d) => d.data() as NewsArticle);
+    } else {
+      console.log('Seeding initial articles to Firestore Cloud Database...');
+      for (const art of initialData.articles) {
+        await setDoc(doc(db, 'articles', art.id), art);
+      }
+      articles = [...initialData.articles];
+    }
+
+    // 2. Infographics
+    const infoSnap = await getDocs(collection(db, 'infographics'));
+    let infographics: Infographic[] = [];
+    if (!infoSnap.empty) {
+      infographics = infoSnap.docs.map((d) => d.data() as Infographic);
+    } else {
+      for (const info of initialData.infographics) {
+        await setDoc(doc(db, 'infographics', info.id), info);
+      }
+      infographics = [...initialData.infographics];
+    }
+
+    // 3. Databoks
+    const dataSnap = await getDocs(collection(db, 'databoks'));
+    let databoks: DataboksItem[] = [];
+    if (!dataSnap.empty) {
+      databoks = dataSnap.docs.map((d) => d.data() as DataboksItem);
+    } else {
+      for (const item of initialData.databoks) {
+        await setDoc(doc(db, 'databoks', item.id), item);
+      }
+      databoks = [...initialData.databoks];
+    }
+
+    const carousel = articles.filter((a) => a.isFeatured);
+
+    const store = {
+      articles,
+      carousel: carousel.length > 0 ? carousel : articles.slice(0, 3),
+      infographics,
+      databoks,
+      videos: initialData.videos,
+    };
+    saveStoreData(store);
+    return store;
+  } catch (err) {
+    console.error('Firestore sync error:', err);
+    return getStoreData();
+  }
+}
+
+// Initial sync on startup
+syncFromFirestore().catch((err) => console.error('Initial Firestore sync failed:', err));
+
 // REST API Endpoints
 
 // GET /api/news
-app.get('/api/news', (req, res) => {
-  const data = getStoreData();
+app.get('/api/news', async (req, res) => {
+  let data = getStoreData();
+  // If data is empty or missing, sync from Firestore
+  if (!data.articles || data.articles.length === 0) {
+    data = await syncFromFirestore();
+  }
+
   let articles: NewsArticle[] = data.articles || [];
 
   const { category, search } = req.query;
@@ -111,7 +192,7 @@ app.get('/api/news/:id', (req, res) => {
 });
 
 // POST /api/news
-app.post('/api/news', (req, res) => {
+app.post('/api/news', async (req, res) => {
   const data = getStoreData();
   const { 
     title, 
@@ -153,13 +234,23 @@ app.post('/api/news', (req, res) => {
   };
 
   data.articles = [newArticle, ...(data.articles || [])];
+  if (newArticle.isFeatured) {
+    data.carousel = [newArticle, ...(data.carousel || [])];
+  }
   saveStoreData(data);
+
+  // Save to Firebase Firestore Cloud Database
+  try {
+    await setDoc(doc(db, 'articles', newArticle.id), newArticle);
+  } catch (err) {
+    console.error('Failed to save article to Firestore:', err);
+  }
 
   res.json({ success: true, article: newArticle });
 });
 
 // PUT /api/news/:id
-app.put('/api/news/:id', (req, res) => {
+app.put('/api/news/:id', async (req, res) => {
   const data = getStoreData();
   const index = (data.articles || []).findIndex((a: NewsArticle) => a.id === req.params.id);
 
@@ -184,7 +275,7 @@ app.put('/api/news/:id', (req, res) => {
   } = req.body;
   const existing = data.articles[index];
 
-  data.articles[index] = {
+  const updatedArticle = {
     ...existing,
     title: title || existing.title,
     category: category || existing.category,
@@ -201,17 +292,36 @@ app.put('/api/news/:id', (req, res) => {
     tags: tags || existing.tags,
   };
 
+  data.articles[index] = updatedArticle;
   saveStoreData(data);
-  res.json({ success: true, article: data.articles[index] });
+
+  // Save to Firebase Firestore Cloud Database
+  try {
+    await setDoc(doc(db, 'articles', updatedArticle.id), updatedArticle);
+  } catch (err) {
+    console.error('Failed to update article in Firestore:', err);
+  }
+
+  res.json({ success: true, article: updatedArticle });
 });
 
 // DELETE /api/news/:id
-app.delete('/api/news/:id', (req, res) => {
+app.delete('/api/news/:id', async (req, res) => {
   const data = getStoreData();
   data.articles = (data.articles || []).filter((a: NewsArticle) => a.id !== req.params.id);
+  data.carousel = (data.carousel || []).filter((a: NewsArticle) => a.id !== req.params.id);
   saveStoreData(data);
+
+  // Delete from Firebase Firestore Cloud Database
+  try {
+    await deleteDoc(doc(db, 'articles', req.params.id));
+  } catch (err) {
+    console.error('Failed to delete article from Firestore:', err);
+  }
+
   res.json({ success: true, message: 'Berita berhasil dihapus' });
 });
+
 
 // GET /api/carousel
 app.get('/api/carousel', (req, res) => {

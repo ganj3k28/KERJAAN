@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from './lib/firebase';
 import { NewsArticle, Infographic, DataboksItem, VideoItem } from './types';
 import { initialData } from './initialData';
 import { Header } from './components/Header';
@@ -205,13 +207,45 @@ export default function App() {
     }
   }, [refreshLocalData]);
 
-  // Initial fetch + Auto sync every 5 seconds & on tab focus
+  // Initial fetch + Auto sync every 3 seconds & on tab focus + Real-time Firestore Cloud Database listener
   useEffect(() => {
     fetchBackendData();
 
+    // Live Firebase Firestore listener across all browsers & devices
+    let unsubArticles: (() => void) | null = null;
+    let unsubInfo: (() => void) | null = null;
+    let unsubData: (() => void) | null = null;
+
+    try {
+      unsubArticles = onSnapshot(collection(db, 'articles'), (snapshot) => {
+        if (!snapshot.empty) {
+          const arts = snapshot.docs.map((d) => d.data() as NewsArticle);
+          setAllArticles(arts);
+          const featured = arts.filter((a) => a.isFeatured);
+          if (featured.length > 0) {
+            setCarouselSlides(featured);
+          }
+        }
+      });
+
+      unsubInfo = onSnapshot(collection(db, 'infographics'), (snapshot) => {
+        if (!snapshot.empty) {
+          setInfographics(snapshot.docs.map((d) => d.data() as Infographic));
+        }
+      });
+
+      unsubData = onSnapshot(collection(db, 'databoks'), (snapshot) => {
+        if (!snapshot.empty) {
+          setDataboksItems(snapshot.docs.map((d) => d.data() as DataboksItem));
+        }
+      });
+    } catch (err) {
+      console.error('Firestore real-time subscription notice:', err);
+    }
+
     const interval = setInterval(() => {
       fetchBackendData();
-    }, 5000);
+    }, 3000);
 
     const handleFocus = () => {
       fetchBackendData();
@@ -221,6 +255,9 @@ export default function App() {
     window.addEventListener('visibilitychange', handleFocus);
 
     return () => {
+      if (unsubArticles) unsubArticles();
+      if (unsubInfo) unsubInfo();
+      if (unsubData) unsubData();
       clearInterval(interval);
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('visibilitychange', handleFocus);
