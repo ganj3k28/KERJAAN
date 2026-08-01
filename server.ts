@@ -252,6 +252,14 @@ app.post('/api/infographics', (req, res) => {
   res.json({ success: true, infographic: newInfo });
 });
 
+// DELETE /api/infographics/:id
+app.delete('/api/infographics/:id', (req, res) => {
+  const data = getStoreData();
+  data.infographics = (data.infographics || []).filter((i: Infographic) => i.id !== req.params.id);
+  saveStoreData(data);
+  res.json({ success: true, message: 'Infografik berhasil dihapus' });
+});
+
 // GET /api/databoks
 app.get('/api/databoks', (req, res) => {
   const data = getStoreData();
@@ -276,6 +284,14 @@ app.post('/api/databoks', (req, res) => {
   data.databoks = [newItem, ...(data.databoks || [])];
   saveStoreData(data);
   res.json({ success: true, item: newItem });
+});
+
+// DELETE /api/databoks/:id
+app.delete('/api/databoks/:id', (req, res) => {
+  const data = getStoreData();
+  data.databoks = (data.databoks || []).filter((d: DataboksItem) => d.id !== req.params.id);
+  saveStoreData(data);
+  res.json({ success: true, message: 'Databoks berhasil dihapus' });
 });
 
 // GET /api/videos
