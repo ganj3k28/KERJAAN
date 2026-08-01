@@ -193,32 +193,34 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     };
 
     try {
-      let res;
+      let response;
       if (editingArticleId) {
-        res = await fetch(`/api/news/${editingArticleId}`, {
+        response = await fetch(`/api/news/${editingArticleId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
-        }).then((r) => r.json());
+        });
       } else {
-        res = await fetch('/api/news', {
+        response = await fetch('/api/news', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
-        }).then((r) => r.json());
+        });
       }
 
-      if (res?.success) {
+      const res = await response.json().catch(() => null);
+
+      if (response.ok && res?.success) {
         setMsg({ type: 'success', text: editingArticleId ? 'Berita berhasil diperbarui secara live di server!' : 'Berita baru berhasil diterbitkan secara live di server!' });
         resetArticleForm();
         await onRefreshData();
         return;
       } else {
-        setMsg({ type: 'error', text: res?.message || 'Gagal menyimpan berita ke server!' });
+        setMsg({ type: 'error', text: res?.message || `Gagal menyimpan berita (HTTP ${response.status})` });
       }
     } catch (err) {
       console.error('Save article error:', err);
-      setMsg({ type: 'error', text: 'Terjadi kesalahan jaringan/server saat menyimpan berita.' });
+      setMsg({ type: 'error', text: 'Terjadi kesalahan jaringan/server saat menyimpan berita. Periksa koneksi internet Anda.' });
     }
   };
 

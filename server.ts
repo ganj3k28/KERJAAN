@@ -191,118 +191,143 @@ app.get('/api/news/:id', (req, res) => {
   }
 });
 
+// Helper to remove undefined fields for Firestore
+function sanitizeForFirestore(obj: any): any {
+  if (!obj) return {};
+  return JSON.parse(JSON.stringify(obj, (key, value) => (value === undefined ? '' : value)));
+}
+
 // POST /api/news
 app.post('/api/news', async (req, res) => {
-  const data = getStoreData();
-  const { 
-    title, 
-    category, 
-    snippet, 
-    content, 
-    author, 
-    image, 
-    imageCaption, 
-    middleImage, 
-    middleImageCaption, 
-    galleryImages, 
-    isFeatured, 
-    isPopular, 
-    tags 
-  } = req.body;
-
-  if (!title || !category || !content) {
-    return res.status(400).json({ success: false, message: 'Judul, Kategori, dan Isi Berita wajib diisi' });
-  }
-
-  const newArticle: NewsArticle = {
-    id: 'art-' + Date.now(),
-    title,
-    category,
-    publishedAt: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase() + ', ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-    views: 1,
-    snippet: snippet || content.substring(0, 150) + '...',
-    content,
-    author: author || 'Tim Redaksi ASQI',
-    image: image || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80',
-    imageCaption: imageCaption || '',
-    middleImage: middleImage || '',
-    middleImageCaption: middleImageCaption || '',
-    galleryImages: Array.isArray(galleryImages) ? galleryImages : [],
-    isFeatured: !!isFeatured,
-    isPopular: !!isPopular,
-    tags: Array.isArray(tags) ? tags : [category],
-  };
-
-  data.articles = [newArticle, ...(data.articles || [])];
-  if (newArticle.isFeatured) {
-    data.carousel = [newArticle, ...(data.carousel || [])];
-  }
-  saveStoreData(data);
-
-  // Save to Firebase Firestore Cloud Database
   try {
-    await setDoc(doc(db, 'articles', newArticle.id), newArticle);
-  } catch (err) {
-    console.error('Failed to save article to Firestore:', err);
-  }
+    const data = getStoreData();
+    const { 
+      title, 
+      category, 
+      snippet, 
+      content, 
+      author, 
+      image, 
+      imageCaption, 
+      middleImage, 
+      middleImageCaption, 
+      galleryImages, 
+      isFeatured, 
+      isPopular, 
+      tags 
+    } = req.body;
 
-  res.json({ success: true, article: newArticle });
+    if (!title || !category || !content) {
+      return res.status(400).json({ success: false, message: 'Judul, Kategori, dan Isi Berita wajib diisi' });
+    }
+
+    const newArticle: NewsArticle = {
+      id: 'art-' + Date.now(),
+      title: String(title).trim(),
+      category: String(category).trim(),
+      publishedAt: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase() + ', ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+      views: 1,
+      snippet: snippet ? String(snippet).trim() : String(content).trim().substring(0, 150) + '...',
+      content: String(content).trim(),
+      author: author ? String(author).trim() : 'Tim Redaksi ASQI',
+      image: image ? String(image).trim() : 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80',
+      imageCaption: imageCaption ? String(imageCaption).trim() : '',
+      middleImage: middleImage ? String(middleImage).trim() : '',
+      middleImageCaption: middleImageCaption ? String(middleImageCaption).trim() : '',
+      galleryImages: Array.isArray(galleryImages) 
+        ? galleryImages.map((g: any) => ({
+            url: typeof g === 'string' ? g : (g?.url || ''),
+            caption: typeof g === 'object' ? (g?.caption || '') : '',
+          })) 
+        : [],
+      isFeatured: !!isFeatured,
+      isPopular: !!isPopular,
+      tags: Array.isArray(tags) ? tags : [category],
+    };
+
+    data.articles = [newArticle, ...(data.articles || [])];
+    if (newArticle.isFeatured) {
+      data.carousel = [newArticle, ...(data.carousel || [])];
+    }
+    saveStoreData(data);
+
+    // Save to Firebase Firestore Cloud Database
+    try {
+      const cleanDoc = sanitizeForFirestore(newArticle);
+      await setDoc(doc(db, 'articles', newArticle.id), cleanDoc);
+    } catch (err) {
+      console.error('Failed to save article to Firestore:', err);
+    }
+
+    return res.json({ success: true, article: newArticle });
+  } catch (err: any) {
+    console.error('Error in POST /api/news:', err);
+    return res.status(500).json({ success: false, message: err?.message || 'Gagal memproses berita di server' });
+  }
 });
 
 // PUT /api/news/:id
 app.put('/api/news/:id', async (req, res) => {
-  const data = getStoreData();
-  const index = (data.articles || []).findIndex((a: NewsArticle) => a.id === req.params.id);
-
-  if (index === -1) {
-    return res.status(404).json({ success: false, message: 'Berita tidak ditemukan' });
-  }
-
-  const { 
-    title, 
-    category, 
-    snippet, 
-    content, 
-    author, 
-    image, 
-    imageCaption, 
-    middleImage, 
-    middleImageCaption, 
-    galleryImages, 
-    isFeatured, 
-    isPopular, 
-    tags 
-  } = req.body;
-  const existing = data.articles[index];
-
-  const updatedArticle = {
-    ...existing,
-    title: title || existing.title,
-    category: category || existing.category,
-    snippet: snippet || existing.snippet,
-    content: content || existing.content,
-    author: author || existing.author,
-    image: image || existing.image,
-    imageCaption: imageCaption !== undefined ? imageCaption : existing.imageCaption,
-    middleImage: middleImage !== undefined ? middleImage : existing.middleImage,
-    middleImageCaption: middleImageCaption !== undefined ? middleImageCaption : existing.middleImageCaption,
-    galleryImages: galleryImages !== undefined ? galleryImages : existing.galleryImages,
-    isFeatured: isFeatured !== undefined ? isFeatured : existing.isFeatured,
-    isPopular: isPopular !== undefined ? isPopular : existing.isPopular,
-    tags: tags || existing.tags,
-  };
-
-  data.articles[index] = updatedArticle;
-  saveStoreData(data);
-
-  // Save to Firebase Firestore Cloud Database
   try {
-    await setDoc(doc(db, 'articles', updatedArticle.id), updatedArticle);
-  } catch (err) {
-    console.error('Failed to update article in Firestore:', err);
-  }
+    const data = getStoreData();
+    const index = (data.articles || []).findIndex((a: NewsArticle) => a.id === req.params.id);
 
-  res.json({ success: true, article: updatedArticle });
+    if (index === -1) {
+      return res.status(404).json({ success: false, message: 'Berita tidak ditemukan' });
+    }
+
+    const { 
+      title, 
+      category, 
+      snippet, 
+      content, 
+      author, 
+      image, 
+      imageCaption, 
+      middleImage, 
+      middleImageCaption, 
+      galleryImages, 
+      isFeatured, 
+      isPopular, 
+      tags 
+    } = req.body;
+    const existing = data.articles[index];
+
+    const updatedArticle = {
+      ...existing,
+      title: title !== undefined ? String(title).trim() : existing.title,
+      category: category !== undefined ? String(category).trim() : existing.category,
+      snippet: snippet !== undefined ? String(snippet).trim() : existing.snippet,
+      content: content !== undefined ? String(content).trim() : existing.content,
+      author: author !== undefined ? String(author).trim() : existing.author,
+      image: image !== undefined ? String(image).trim() : existing.image,
+      imageCaption: imageCaption !== undefined ? String(imageCaption).trim() : existing.imageCaption,
+      middleImage: middleImage !== undefined ? String(middleImage).trim() : existing.middleImage,
+      middleImageCaption: middleImageCaption !== undefined ? String(middleImageCaption).trim() : existing.middleImageCaption,
+      galleryImages: galleryImages !== undefined 
+        ? (Array.isArray(galleryImages) ? galleryImages.map((g: any) => ({ url: typeof g === 'string' ? g : (g?.url || ''), caption: typeof g === 'object' ? (g?.caption || '') : '' })) : [])
+        : existing.galleryImages,
+      isFeatured: isFeatured !== undefined ? !!isFeatured : existing.isFeatured,
+      isPopular: isPopular !== undefined ? !!isPopular : existing.isPopular,
+      tags: tags !== undefined ? (Array.isArray(tags) ? tags : [category]) : existing.tags,
+    };
+
+    data.articles[index] = updatedArticle;
+    saveStoreData(data);
+
+    // Save to Firebase Firestore Cloud Database
+    try {
+      const cleanDoc = sanitizeForFirestore(updatedArticle);
+      await setDoc(doc(db, 'articles', updatedArticle.id), cleanDoc);
+    } catch (err) {
+      console.error('Failed to update article in Firestore:', err);
+    }
+
+    return res.json({ success: true, article: updatedArticle });
+  } catch (err: any) {
+    console.error('Error in PUT /api/news/:id:', err);
+    return res.status(500).json({ success: false, message: err?.message || 'Gagal memperbarui berita di server' });
+  }
 });
 
 // DELETE /api/news/:id
