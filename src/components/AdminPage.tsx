@@ -3,6 +3,7 @@ import { Shield, Lock, UserCheck, Key, LogOut, ExternalLink, Plus, Trash2, Edit,
 import { NewsArticle, Infographic, DataboksItem, AdminUser, AdminRole } from '../types';
 import { initialData } from '../initialData';
 import { Logo } from './Logo';
+import { ImageUploadInput } from './ImageUploadInput';
 
 const DEFAULT_ADMIN_USERS: AdminUser[] = [
   { id: 'usr-1', username: 'admin', name: 'Super Admin ASQI', role: 'superadmin' },
@@ -47,6 +48,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   const [content, setContent] = useState('');
   const [author, setAuthor] = useState('');
   const [image, setImage] = useState('');
+  const [imageCaption, setImageCaption] = useState('');
+  const [middleImage, setMiddleImage] = useState('');
+  const [middleImageCaption, setMiddleImageCaption] = useState('');
+  const [galleryImages, setGalleryImages] = useState<{ url: string; caption?: string }[]>([]);
   const [isFeatured, setIsFeatured] = useState(false);
   const [isPopular, setIsPopular] = useState(false);
   const [tags, setTags] = useState('');
@@ -178,6 +183,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({
       content,
       author: author || (user ? user.name : 'Redaksi ASQI NEWS'),
       image: image || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80',
+      imageCaption,
+      middleImage,
+      middleImageCaption,
+      galleryImages,
       isFeatured,
       isPopular,
       tags: tags ? tags.split(',').map((t) => t.trim()) : [category],
@@ -224,6 +233,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({
               content,
               author: author || (user ? user.name : 'Redaksi ASQI NEWS'),
               image: image || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80',
+              imageCaption,
+              middleImage,
+              middleImageCaption,
+              galleryImages,
               isFeatured,
               isPopular,
               tags: tags ? tags.split(',').map((t) => t.trim()) : [category],
@@ -243,6 +256,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({
           content,
           author: author || (user ? user.name : 'Redaksi ASQI NEWS'),
           image: image || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80',
+          imageCaption,
+          middleImage,
+          middleImageCaption,
+          galleryImages,
           isFeatured,
           isPopular,
           tags: tags ? tags.split(',').map((t) => t.trim()) : [category],
@@ -267,6 +284,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     setContent(article.content);
     setAuthor(article.author);
     setImage(article.image);
+    setImageCaption(article.imageCaption || '');
+    setMiddleImage(article.middleImage || '');
+    setMiddleImageCaption(article.middleImageCaption || '');
+    setGalleryImages(article.galleryImages || []);
     setIsFeatured(Boolean(article.isFeatured));
     setIsPopular(Boolean(article.isPopular));
     setTags(article.tags ? article.tags.join(', ') : '');
@@ -295,6 +316,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     setSnippet('');
     setContent('');
     setImage('');
+    setImageCaption('');
+    setMiddleImage('');
+    setMiddleImageCaption('');
+    setGalleryImages([]);
     setIsFeatured(false);
     setIsPopular(false);
     setTags('');
@@ -783,17 +808,110 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                   />
                 </div>
 
+                {/* 1. Gambar Sampul Utama (Header/Hero) */}
                 <div style={{ gridColumn: '1 / -1' }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
-                    URL Gambar Headline
-                  </label>
-                  <input
-                    type="url"
+                  <ImageUploadInput
+                    label="1. Gambar Sampul Utama (Header / Hero Headline)"
                     value={image}
-                    onChange={(e) => setImage(e.target.value)}
-                    placeholder="https://images.unsplash.com/..."
-                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#ffffff', fontSize: '14px' }}
+                    onChange={setImage}
+                    captionValue={imageCaption}
+                    onCaptionChange={setImageCaption}
+                    captionPlaceholder="Contoh: Suasana Rapat Paripurna DPR RI di Jakarta / Foto: Antara"
+                    helperText="Upload foto utama dari komputer/HP Anda. Foto ini tampil di headline utama dan thumbnail berita."
                   />
+                </div>
+
+                {/* 2. Gambar Sisipan Tengah Artikel */}
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <ImageUploadInput
+                    label="2. Gambar Sisipan Tengah Artikel (Tersisip di Tengah Paragraf)"
+                    value={middleImage}
+                    onChange={setMiddleImage}
+                    captionValue={middleImageCaption}
+                    onCaptionChange={setMiddleImageCaption}
+                    captionPlaceholder="Contoh: Grafik pertumbuhan ekonomi kuartal III / Sumber: BPS"
+                    helperText="Foto opsional yang akan ditampilkan di pertengahan paragraf bacaan artikel."
+                  />
+                </div>
+
+                {/* 3. Galeri Foto Liputan Tambahan */}
+                <div style={{ gridColumn: '1 / -1', backgroundColor: '#0f172a', padding: '16px', borderRadius: '8px', border: '1px solid #334155', marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: 700, color: '#f8fafc' }}>
+                      3. Foto Liputan Tambahan / Galeri Liputan ({galleryImages.length} Foto)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setGalleryImages([...galleryImages, { url: '', caption: '' }])}
+                      style={{
+                        backgroundColor: '#0284c7',
+                        color: '#ffffff',
+                        border: 'none',
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <Plus size={14} /> Tambah Foto Galeri
+                    </button>
+                  </div>
+
+                  {galleryImages.length === 0 ? (
+                    <div style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic', textAlign: 'center', padding: '12px', backgroundColor: '#020617', borderRadius: '6px' }}>
+                      Belum ada foto galeri tambahan. Klik tombol di atas untuk menambah dokumentasi foto liputan.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {galleryImages.map((gImg, idx) => (
+                        <div key={idx} style={{ position: 'relative' }}>
+                          <ImageUploadInput
+                            label={`Foto Galeri #${idx + 1}`}
+                            value={gImg.url}
+                            onChange={(newUrl) => {
+                              const updated = [...galleryImages];
+                              updated[idx].url = newUrl;
+                              setGalleryImages(updated);
+                            }}
+                            captionValue={gImg.caption || ''}
+                            onCaptionChange={(newCap) => {
+                              const updated = [...galleryImages];
+                              updated[idx].caption = newCap;
+                              setGalleryImages(updated);
+                            }}
+                            captionPlaceholder="Keterangan foto galeri..."
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setGalleryImages(galleryImages.filter((_, i) => i !== idx));
+                            }}
+                            style={{
+                              position: 'absolute',
+                              top: '12px',
+                              right: '12px',
+                              backgroundColor: '#991b1b',
+                              color: '#ffffff',
+                              border: 'none',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                            }}
+                          >
+                            <Trash2 size={12} /> Hapus Foto Ini
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ gridColumn: '1 / -1' }}>

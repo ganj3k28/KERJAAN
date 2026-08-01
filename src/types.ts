@@ -7,7 +7,11 @@ export interface NewsArticle {
   snippet: string;
   content: string;
   author: string;
-  image: string;
+  image: string; // Gambar Sampul Utama
+  imageCaption?: string; // Keterangan foto utama
+  middleImage?: string; // Gambar Sisipan Tengah Artikel
+  middleImageCaption?: string; // Keterangan foto tengah
+  galleryImages?: { url: string; caption?: string }[]; // Galeri Foto Tambahan
   isFeatured?: boolean;
   isPopular?: boolean;
   tags?: string[];

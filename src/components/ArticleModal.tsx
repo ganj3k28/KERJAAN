@@ -163,53 +163,141 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({ article, onClose, on
             </div>
           </div>
 
-          {/* Main Image */}
+          {/* Main Hero Image */}
           <div
             style={{
               width: '100%',
-              maxHeight: '400px',
               borderRadius: '8px',
               overflow: 'hidden',
               marginBottom: '20px',
               backgroundColor: '#0f172a',
+              border: '1px solid #e2e8f0',
             }}
           >
-            <img
-              src={article.image}
-              alt={article.title}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
+            <div style={{ maxHeight: '420px', overflow: 'hidden' }}>
+              <img
+                src={article.image}
+                alt={article.title}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              />
+            </div>
+            {article.imageCaption && (
+              <div
+                style={{
+                  padding: '8px 14px',
+                  backgroundColor: '#f8fafc',
+                  borderTop: '1px solid #e2e8f0',
+                  fontSize: '12px',
+                  color: '#64748b',
+                  fontStyle: 'italic',
+                }}
+              >
+                📷 {article.imageCaption}
+              </div>
+            )}
           </div>
 
           {/* Article Lead/Snippet */}
-          <div
-            style={{
-              fontSize: '15px',
-              fontWeight: 600,
-              color: '#334155',
-              lineHeight: 1.6,
-              marginBottom: '20px',
-              padding: '12px 16px',
-              backgroundColor: '#f8fafc',
-              borderLeft: '4px solid #0284c7',
-              borderRadius: '0 6px 6px 0',
-            }}
-          >
-            {article.snippet}
-          </div>
+          {article.snippet && (
+            <div
+              style={{
+                fontSize: '15px',
+                fontWeight: 600,
+                color: '#1e293b',
+                lineHeight: 1.6,
+                marginBottom: '20px',
+                padding: '12px 16px',
+                backgroundColor: '#f1f5f9',
+                borderLeft: '4px solid #08204D',
+                borderRadius: '0 6px 6px 0',
+              }}
+            >
+              {article.snippet}
+            </div>
+          )}
 
-          {/* Full Paragraphs */}
-          <div
-            style={{
-              fontSize: '15px',
-              color: '#1e293b',
-              lineHeight: 1.8,
-              marginBottom: '28px',
-              whiteSpace: 'pre-line',
-            }}
-          >
-            {article.content}
-          </div>
+          {/* Article Body Content with Inline Middle Image */}
+          {(() => {
+            const paragraphs = article.content.split('\n').filter((p) => p.trim() !== '');
+            if (paragraphs.length === 0) return null;
+
+            const middleIndex = article.middleImage ? Math.max(1, Math.floor(paragraphs.length / 2)) : paragraphs.length;
+            const firstPart = paragraphs.slice(0, middleIndex);
+            const secondPart = paragraphs.slice(middleIndex);
+
+            return (
+              <div style={{ fontSize: '15px', color: '#1e293b', lineHeight: 1.8, marginBottom: '28px' }}>
+                {/* First half of paragraphs */}
+                {firstPart.map((para, idx) => (
+                  <p key={idx} style={{ marginBottom: '16px' }}>
+                    {para}
+                  </p>
+                ))}
+
+                {/* Inline Middle Image (Gambar Sisipan Tengah) */}
+                {article.middleImage && (
+                  <figure
+                    style={{
+                      margin: '24px 0',
+                      backgroundColor: '#f8fafc',
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      border: '1px solid #cbd5e1',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+                    }}
+                  >
+                    <img
+                      src={article.middleImage}
+                      alt={article.middleImageCaption || 'Gambar Sisipan Artikel'}
+                      style={{ width: '100%', maxHeight: '380px', objectFit: 'cover', display: 'block' }}
+                    />
+                    {article.middleImageCaption && (
+                      <figcaption
+                        style={{
+                          padding: '10px 14px',
+                          fontSize: '12px',
+                          color: '#475569',
+                          backgroundColor: '#f1f5f9',
+                          borderTop: '1px solid #e2e8f0',
+                          fontStyle: 'italic',
+                        }}
+                      >
+                        📌 {article.middleImageCaption}
+                      </figcaption>
+                    )}
+                  </figure>
+                )}
+
+                {/* Second half of paragraphs */}
+                {secondPart.map((para, idx) => (
+                  <p key={`p2-${idx}`} style={{ marginBottom: '16px' }}>
+                    {para}
+                  </p>
+                ))}
+              </div>
+            );
+          })()}
+
+          {/* Gallery / Extra Photos */}
+          {article.galleryImages && article.galleryImages.length > 0 && (
+            <div style={{ marginBottom: '28px', backgroundColor: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <h4 style={{ fontSize: '13px', fontWeight: 800, color: '#08204D', textTransform: 'uppercase', marginTop: 0, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                🖼️ DOKUMENTASI FOTO LIPUTAN TAMBAHAN
+              </h4>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+                {article.galleryImages.map((imgItem, gIdx) => (
+                  <div key={gIdx} style={{ borderRadius: '6px', overflow: 'hidden', border: '1px solid #cbd5e1', backgroundColor: '#ffffff' }}>
+                    <img src={imgItem.url} alt={imgItem.caption || 'Foto Galeri'} style={{ width: '100%', height: '150px', objectFit: 'cover', display: 'block' }} />
+                    {imgItem.caption && (
+                      <div style={{ padding: '6px 10px', fontSize: '11px', color: '#64748b', backgroundColor: '#ffffff' }}>
+                        {imgItem.caption}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Tags & Actions */}
           <div

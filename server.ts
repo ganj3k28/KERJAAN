@@ -10,7 +10,8 @@ const app = express();
 const PORT = 3000;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Ensure data directory exists
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -112,7 +113,21 @@ app.get('/api/news/:id', (req, res) => {
 // POST /api/news
 app.post('/api/news', (req, res) => {
   const data = getStoreData();
-  const { title, category, snippet, content, author, image, isFeatured, isPopular, tags } = req.body;
+  const { 
+    title, 
+    category, 
+    snippet, 
+    content, 
+    author, 
+    image, 
+    imageCaption, 
+    middleImage, 
+    middleImageCaption, 
+    galleryImages, 
+    isFeatured, 
+    isPopular, 
+    tags 
+  } = req.body;
 
   if (!title || !category || !content) {
     return res.status(400).json({ success: false, message: 'Judul, Kategori, dan Isi Berita wajib diisi' });
@@ -128,6 +143,10 @@ app.post('/api/news', (req, res) => {
     content,
     author: author || 'Tim Redaksi ASQI',
     image: image || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80',
+    imageCaption: imageCaption || '',
+    middleImage: middleImage || '',
+    middleImageCaption: middleImageCaption || '',
+    galleryImages: Array.isArray(galleryImages) ? galleryImages : [],
     isFeatured: !!isFeatured,
     isPopular: !!isPopular,
     tags: Array.isArray(tags) ? tags : [category],
@@ -148,7 +167,21 @@ app.put('/api/news/:id', (req, res) => {
     return res.status(404).json({ success: false, message: 'Berita tidak ditemukan' });
   }
 
-  const { title, category, snippet, content, author, image, isFeatured, isPopular, tags } = req.body;
+  const { 
+    title, 
+    category, 
+    snippet, 
+    content, 
+    author, 
+    image, 
+    imageCaption, 
+    middleImage, 
+    middleImageCaption, 
+    galleryImages, 
+    isFeatured, 
+    isPopular, 
+    tags 
+  } = req.body;
   const existing = data.articles[index];
 
   data.articles[index] = {
@@ -159,6 +192,10 @@ app.put('/api/news/:id', (req, res) => {
     content: content || existing.content,
     author: author || existing.author,
     image: image || existing.image,
+    imageCaption: imageCaption !== undefined ? imageCaption : existing.imageCaption,
+    middleImage: middleImage !== undefined ? middleImage : existing.middleImage,
+    middleImageCaption: middleImageCaption !== undefined ? middleImageCaption : existing.middleImageCaption,
+    galleryImages: galleryImages !== undefined ? galleryImages : existing.galleryImages,
     isFeatured: isFeatured !== undefined ? isFeatured : existing.isFeatured,
     isPopular: isPopular !== undefined ? isPopular : existing.isPopular,
     tags: tags || existing.tags,
