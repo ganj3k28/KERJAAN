@@ -25,23 +25,6 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="top-header-container">
         <div className="logo" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <a href="/">A S Q I NEWS<span>.com</span></a>
-          <span 
-            className="admin-badge"
-            title="Sistem Manajemen Konten Backend (Express + REST API)"
-            style={{
-              fontSize: '10px',
-              backgroundColor: '#e0f2fe',
-              color: '#0369a1',
-              padding: '2px 6px',
-              borderRadius: '12px',
-              fontWeight: 600,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '3px'
-            }}
-          >
-            <ShieldCheck size={11} /> Express API
-          </span>
         </div>
 
         <form onSubmit={onSearchSubmit} className="search-box">

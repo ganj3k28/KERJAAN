@@ -110,6 +110,43 @@ export default function App() {
     }
   }, []);
 
+  // Fetch API data from Express backend with local fallback
+  const fetchBackendData = useCallback(async () => {
+    try {
+      let newsUrl = '/api/news';
+      const params = new URLSearchParams();
+      if (activeCategory && activeCategory !== 'Telaah') {
+        params.append('category', activeCategory);
+      }
+      if (searchQuery) {
+        params.append('search', searchQuery);
+      }
+      if (params.toString()) {
+        newsUrl += `?${params.toString()}`;
+      }
+
+      const [resNews, resCarousel, resInfo, resData, resVid] = await Promise.all([
+        fetch(newsUrl).then((r) => r.json()).catch(() => null),
+        fetch('/api/carousel').then((r) => r.json()).catch(() => null),
+        fetch('/api/infographics').then((r) => r.json()).catch(() => null),
+        fetch('/api/databoks').then((r) => r.json()).catch(() => null),
+        fetch('/api/videos').then((r) => r.json()).catch(() => null),
+      ]);
+
+      if (resNews?.success) setAllArticles(resNews.articles);
+      if (resCarousel?.success) setCarouselSlides(resCarousel.slides);
+      if (resInfo?.success) setInfographics(resInfo.infographics);
+      if (resData?.success) setDataboksItems(resData.databoks);
+      if (resVid?.success) setVideos(resVid.videos);
+    } catch {
+      refreshLocalData();
+    }
+  }, [activeCategory, searchQuery, refreshLocalData]);
+
+  useEffect(() => {
+    fetchBackendData();
+  }, [fetchBackendData]);
+
   // Filter articles according to category and search query
   const filteredArticles = allArticles.filter((art) => {
     const matchesCategory =

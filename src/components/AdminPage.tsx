@@ -96,41 +96,59 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     }
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
     setIsSubmittingLogin(true);
 
-    setTimeout(() => {
-      try {
-        const savedUsersStr = localStorage.getItem('asqi_admin_users');
-        const usersList: AdminUser[] = savedUsersStr ? JSON.parse(savedUsersStr) : DEFAULT_ADMIN_USERS;
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: loginUsername, password: loginPassword }),
+      });
+      const data = await res.json();
 
-        let matchedUser: AdminUser | undefined;
-        if (loginUsername === 'admin' && loginPassword === 'admin123') {
-          matchedUser = DEFAULT_ADMIN_USERS[0];
-        } else if (loginUsername === 'editor' && loginPassword === 'editor123') {
-          matchedUser = DEFAULT_ADMIN_USERS[1];
-        } else if (loginUsername === 'jurnalis' && loginPassword === 'jurnalis123') {
-          matchedUser = DEFAULT_ADMIN_USERS[2];
-        } else {
-          matchedUser = usersList.find((u) => u.username === loginUsername);
-        }
-
-        if (matchedUser) {
-          setUser(matchedUser);
-          setAuthor(matchedUser.name);
-          localStorage.setItem('asqi_admin_user', JSON.stringify(matchedUser));
-          setMsg({ type: 'success', text: `Selamat datang kembali, ${matchedUser.name}!` });
-        } else {
-          setLoginError('Username atau password tidak valid. Silakan gunakan akun demo yang tersedia.');
-        }
-      } catch {
-        setLoginError('Terjadi kesalahan saat memproses login.');
-      } finally {
+      if (data?.success) {
+        setUser(data.user);
+        setAuthor(data.user.name);
+        localStorage.setItem('asqi_admin_user', JSON.stringify(data.user));
+        setMsg({ type: 'success', text: `Selamat datang kembali, ${data.user.name}!` });
         setIsSubmittingLogin(false);
+        return;
       }
-    }, 200);
+    } catch {
+      // Fallback to local authentication
+    }
+
+    try {
+      const savedUsersStr = localStorage.getItem('asqi_admin_users');
+      const usersList: AdminUser[] = savedUsersStr ? JSON.parse(savedUsersStr) : DEFAULT_ADMIN_USERS;
+
+      let matchedUser: AdminUser | undefined;
+      if (loginUsername === 'admin' && loginPassword === 'admin123') {
+        matchedUser = DEFAULT_ADMIN_USERS[0];
+      } else if (loginUsername === 'editor' && loginPassword === 'editor123') {
+        matchedUser = DEFAULT_ADMIN_USERS[1];
+      } else if (loginUsername === 'jurnalis' && loginPassword === 'jurnalis123') {
+        matchedUser = DEFAULT_ADMIN_USERS[2];
+      } else {
+        matchedUser = usersList.find((u) => u.username === loginUsername);
+      }
+
+      if (matchedUser) {
+        setUser(matchedUser);
+        setAuthor(matchedUser.name);
+        localStorage.setItem('asqi_admin_user', JSON.stringify(matchedUser));
+        setMsg({ type: 'success', text: `Selamat datang kembali, ${matchedUser.name}!` });
+      } else {
+        setLoginError('Username atau password tidak valid.');
+      }
+    } catch {
+      setLoginError('Terjadi kesalahan saat memproses login.');
+    } finally {
+      setIsSubmittingLogin(false);
+    }
   };
 
   const fillQuickLogin = (uname: string, pass: string) => {
@@ -145,11 +163,49 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     setMsg(null);
   };
 
-  const handleSaveArticle = (e: React.FormEvent) => {
+  const handleSaveArticle = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !category || !content) {
       setMsg({ type: 'error', text: 'Judul, Kategori, dan Isi Berita wajib diisi!' });
       return;
+    }
+
+    const payload = {
+      title,
+      category,
+      snippet: snippet || content.substring(0, 150) + '...',
+      content,
+      author: author || (user ? user.name : 'Redaksi ASQI NEWS'),
+      image: image || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80',
+      isFeatured,
+      isPopular,
+      tags: tags ? tags.split(',').map((t) => t.trim()) : [category],
+    };
+
+    try {
+      let res;
+      if (editingArticleId) {
+        res = await fetch(`/api/news/${editingArticleId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }).then((r) => r.json());
+      } else {
+        res = await fetch('/api/news', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }).then((r) => r.json());
+      }
+
+      if (res?.success) {
+        setMsg({ type: 'success', text: editingArticleId ? 'Berita berhasil diperbarui!' : 'Berita baru berhasil diterbitkan!' });
+        resetArticleForm();
+        onRefreshData();
+        return;
+      }
+    } catch {
+      // Fallback to local storage if API fails
     }
 
     try {
@@ -198,7 +254,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
       resetArticleForm();
       onRefreshData();
     } catch {
-      setMsg({ type: 'error', text: 'Gagal menyimpan berita ke penyimpanan lokal' });
+      setMsg({ type: 'error', text: 'Gagal menyimpan berita' });
     }
   };
 
