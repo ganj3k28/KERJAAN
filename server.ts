@@ -197,8 +197,45 @@ function sanitizeForFirestore(obj: any): any {
   return JSON.parse(JSON.stringify(obj, (key, value) => (value === undefined ? '' : value)));
 }
 
+// Global Maintenance Mode State
+let maintenanceSettings = {
+  enabled: false,
+  message: 'Website ASQI NEWS sedang dalam pemeliharaan sistem rutin untuk peningkatan infrastruktur & performa. Kami akan segera kembali dengan sajian berita dan data terkini.',
+  updatedAt: new Date().toISOString(),
+};
+
+// GET /api/maintenance
+app.get('/api/maintenance', (req, res) => {
+  const data = getStoreData();
+  const current = data.maintenance || maintenanceSettings;
+  res.json({ success: true, maintenance: current });
+});
+
+// POST /api/maintenance
+app.post('/api/maintenance', (req, res) => {
+  try {
+    const { enabled, message } = req.body;
+    const data = getStoreData();
+    const updated = {
+      enabled: !!enabled,
+      message: message !== undefined ? String(message).trim() : (data.maintenance?.message || maintenanceSettings.message),
+      updatedAt: new Date().toISOString(),
+    };
+    data.maintenance = updated;
+    saveStoreData(data);
+
+    // Sync to Firestore in background
+    setDoc(doc(db, 'settings', 'maintenance'), updated).catch((err) => console.error('Firestore maintenance save error:', err));
+
+    return res.json({ success: true, maintenance: updated });
+  } catch (err: any) {
+    console.error('Error POST /api/maintenance:', err);
+    return res.status(500).json({ success: false, message: 'Gagal memperbarui status maintenance' });
+  }
+});
+
 // POST /api/news
-app.post('/api/news', async (req, res) => {
+app.post('/api/news', (req, res) => {
   try {
     const data = getStoreData();
     const { 
@@ -251,13 +288,11 @@ app.post('/api/news', async (req, res) => {
     }
     saveStoreData(data);
 
-    // Save to Firebase Firestore Cloud Database
-    try {
-      const cleanDoc = sanitizeForFirestore(newArticle);
-      await setDoc(doc(db, 'articles', newArticle.id), cleanDoc);
-    } catch (err) {
-      console.error('Failed to save article to Firestore:', err);
-    }
+    // Non-blocking background sync to Firebase Firestore Cloud Database
+    const cleanDoc = sanitizeForFirestore(newArticle);
+    setDoc(doc(db, 'articles', newArticle.id), cleanDoc).catch((err) => {
+      console.error('Failed to save article to Firestore background:', err);
+    });
 
     return res.json({ success: true, article: newArticle });
   } catch (err: any) {
@@ -267,7 +302,7 @@ app.post('/api/news', async (req, res) => {
 });
 
 // PUT /api/news/:id
-app.put('/api/news/:id', async (req, res) => {
+app.put('/api/news/:id', (req, res) => {
   try {
     const data = getStoreData();
     const index = (data.articles || []).findIndex((a: NewsArticle) => a.id === req.params.id);
@@ -315,13 +350,11 @@ app.put('/api/news/:id', async (req, res) => {
     data.articles[index] = updatedArticle;
     saveStoreData(data);
 
-    // Save to Firebase Firestore Cloud Database
-    try {
-      const cleanDoc = sanitizeForFirestore(updatedArticle);
-      await setDoc(doc(db, 'articles', updatedArticle.id), cleanDoc);
-    } catch (err) {
-      console.error('Failed to update article in Firestore:', err);
-    }
+    // Non-blocking background sync to Firebase Firestore Cloud Database
+    const cleanDoc = sanitizeForFirestore(updatedArticle);
+    setDoc(doc(db, 'articles', updatedArticle.id), cleanDoc).catch((err) => {
+      console.error('Failed to update article in Firestore background:', err);
+    });
 
     return res.json({ success: true, article: updatedArticle });
   } catch (err: any) {
@@ -331,18 +364,16 @@ app.put('/api/news/:id', async (req, res) => {
 });
 
 // DELETE /api/news/:id
-app.delete('/api/news/:id', async (req, res) => {
+app.delete('/api/news/:id', (req, res) => {
   const data = getStoreData();
   data.articles = (data.articles || []).filter((a: NewsArticle) => a.id !== req.params.id);
   data.carousel = (data.carousel || []).filter((a: NewsArticle) => a.id !== req.params.id);
   saveStoreData(data);
 
-  // Delete from Firebase Firestore Cloud Database
-  try {
-    await deleteDoc(doc(db, 'articles', req.params.id));
-  } catch (err) {
-    console.error('Failed to delete article from Firestore:', err);
-  }
+  // Non-blocking background delete from Firebase Firestore
+  deleteDoc(doc(db, 'articles', req.params.id)).catch((err) => {
+    console.error('Failed to delete article from Firestore background:', err);
+  });
 
   res.json({ success: true, message: 'Berita berhasil dihapus' });
 });

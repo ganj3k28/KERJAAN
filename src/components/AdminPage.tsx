@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Lock, UserCheck, Key, LogOut, ExternalLink, Plus, Trash2, Edit, RefreshCw, Layers, FileText, BarChart2, Users, AlertCircle, CheckCircle, Download } from 'lucide-react';
+import { Shield, Lock, UserCheck, Key, LogOut, ExternalLink, Plus, Trash2, Edit, RefreshCw, Layers, FileText, BarChart2, Users, AlertCircle, CheckCircle, Download, Wrench, Power } from 'lucide-react';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { NewsArticle, Infographic, DataboksItem, AdminUser, AdminRole } from '../types';
 import { initialData } from '../initialData';
 import { Logo } from './Logo';
@@ -73,6 +75,56 @@ export const AdminPage: React.FC<AdminPageProps> = ({
 
   // Notification / Message
   const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Maintenance State
+  const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
+  const [maintenanceMessage, setMaintenanceMessage] = useState('Website ASQI NEWS sedang dalam pemeliharaan sistem rutin untuk peningkatan infrastruktur & performa. Kami akan segera kembali!');
+  const [isSavingMaintenance, setIsSavingMaintenance] = useState(false);
+
+  // Load maintenance status
+  useEffect(() => {
+    fetch('/api/maintenance')
+      .then((r) => r.json())
+      .then((res) => {
+        if (res?.success && res.maintenance) {
+          setMaintenanceEnabled(!!res.maintenance.enabled);
+          if (res.maintenance.message) setMaintenanceMessage(res.maintenance.message);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleToggleMaintenance = async (targetState: boolean) => {
+    setIsSavingMaintenance(true);
+    try {
+      // 1. Save directly to Firestore Cloud Database
+      await setDoc(doc(db, 'settings', 'maintenance'), {
+        enabled: targetState,
+        message: maintenanceMessage,
+        updatedAt: new Date().toISOString(),
+      }).catch(() => {});
+
+      // 2. Save via REST API
+      await fetch('/api/maintenance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: targetState, message: maintenanceMessage }),
+      });
+
+      setMaintenanceEnabled(targetState);
+      setMsg({
+        type: 'success',
+        text: targetState
+          ? '🔴 MODE PERAWATAN DI-AKTIFKAN! Pembaca/Pengunjung umum sekarang melihat halaman Maintenance.'
+          : '🟢 MODE PERAWATAN DI-MATIKAN! Website ASQI NEWS sekarang kembali aktif secara publik.',
+      });
+    } catch (err) {
+      console.error('Toggle maintenance error:', err);
+      setMsg({ type: 'error', text: 'Gagal memperbarui status Mode Perawatan.' });
+    } finally {
+      setIsSavingMaintenance(false);
+    }
+  };
 
   // Set default author when user logs in
   useEffect(() => {
@@ -176,51 +228,73 @@ export const AdminPage: React.FC<AdminPageProps> = ({
       return;
     }
 
-    const payload = {
-      title,
-      category,
-      snippet: snippet || content.substring(0, 150) + '...',
-      content,
-      author: author || (user ? user.name : 'Redaksi ASQI NEWS'),
-      image: image || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80',
-      imageCaption,
-      middleImage,
-      middleImageCaption,
-      galleryImages,
-      isFeatured,
-      isPopular,
+    const articleId = editingArticleId || ('art-' + Date.now());
+    const fullArticle: NewsArticle = {
+      id: articleId,
+      title: title.trim(),
+      category: category.trim(),
+      publishedAt: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase() + ', ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+      views: 1,
+      snippet: (snippet || content.substring(0, 150) + '...').trim(),
+      content: content.trim(),
+      author: (author || (user ? user.name : 'Redaksi ASQI NEWS')).trim(),
+      image: (image || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80').trim(),
+      imageCaption: (imageCaption || '').trim(),
+      middleImage: (middleImage || '').trim(),
+      middleImageCaption: (middleImageCaption || '').trim(),
+      galleryImages: Array.isArray(galleryImages) ? galleryImages : [],
+      isFeatured: !!isFeatured,
+      isPopular: !!isPopular,
       tags: tags ? tags.split(',').map((t) => t.trim()) : [category],
     };
 
+    let firestoreSaved = false;
+    let apiSaved = false;
+
+    // 1. Direct write to Firebase Firestore Cloud Database (Instant, real-time sync)
+    try {
+      const cleanDoc = JSON.parse(JSON.stringify(fullArticle, (k, v) => (v === undefined ? '' : v)));
+      await setDoc(doc(db, 'articles', articleId), cleanDoc);
+      firestoreSaved = true;
+    } catch (fsErr) {
+      console.warn('Direct Firestore save notice:', fsErr);
+    }
+
+    // 2. Call REST API Server
     try {
       let response;
       if (editingArticleId) {
         response = await fetch(`/api/news/${editingArticleId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(fullArticle),
         });
       } else {
         response = await fetch('/api/news', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(fullArticle),
         });
       }
 
-      const res = await response.json().catch(() => null);
-
-      if (response.ok && res?.success) {
-        setMsg({ type: 'success', text: editingArticleId ? 'Berita berhasil diperbarui secara live di server!' : 'Berita baru berhasil diterbitkan secara live di server!' });
-        resetArticleForm();
-        await onRefreshData();
-        return;
-      } else {
-        setMsg({ type: 'error', text: res?.message || `Gagal menyimpan berita (HTTP ${response.status})` });
+      if (response && response.ok) {
+        apiSaved = true;
       }
-    } catch (err) {
-      console.error('Save article error:', err);
-      setMsg({ type: 'error', text: 'Terjadi kesalahan jaringan/server saat menyimpan berita. Periksa koneksi internet Anda.' });
+    } catch (apiErr) {
+      console.warn('REST API save notice:', apiErr);
+    }
+
+    if (firestoreSaved || apiSaved) {
+      setMsg({
+        type: 'success',
+        text: editingArticleId
+          ? 'Berita berhasil diperbarui secara live di database cloud!'
+          : 'Berita baru berhasil diterbitkan secara live di database cloud!',
+      });
+      resetArticleForm();
+      await onRefreshData();
+    } else {
+      setMsg({ type: 'error', text: 'Gagal menyimpan berita. Silakan periksa koneksi internet Anda.' });
     }
   };
 
@@ -584,6 +658,29 @@ export const AdminPage: React.FC<AdminPageProps> = ({
           <span style={{ backgroundColor: '#0369a1', color: '#e0f2fe', padding: '3px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600 }}>
             Domain Routing /admin
           </span>
+          {user.role === 'superadmin' && (
+            <button
+              type="button"
+              onClick={() => handleToggleMaintenance(!maintenanceEnabled)}
+              title="Klik untuk mengubah Mode Perawatan secara instant"
+              style={{
+                backgroundColor: maintenanceEnabled ? '#7f1d1d' : '#064e3b',
+                color: maintenanceEnabled ? '#fca5a5' : '#a7f3d0',
+                border: `1px solid ${maintenanceEnabled ? '#ef4444' : '#10b981'}`,
+                padding: '4px 10px',
+                borderRadius: '6px',
+                fontSize: '11px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <Wrench size={13} />
+              {maintenanceEnabled ? 'MAINTENANCE MODE: AKTIF 🔴' : 'MAINTENANCE MODE: OFF 🟢'}
+            </button>
+          )}
         </div>
 
         {/* User Info & Actions */}
@@ -1198,6 +1295,108 @@ export const AdminPage: React.FC<AdminPageProps> = ({
         {/* TAB 4: SYSTEM & DATABASE RESET (SUPERADMIN ONLY) */}
         {activeTab === 'system' && user.role === 'superadmin' && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+            {/* Maintenance Mode Control Card */}
+            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '24px', border: `2px solid ${maintenanceEnabled ? '#ef4444' : '#10b981'}` }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 800, margin: 0, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Wrench size={20} style={{ color: maintenanceEnabled ? '#f87171' : '#34d399' }} /> Mode Perawatan (Maintenance Mode)
+                </h3>
+                <span
+                  style={{
+                    backgroundColor: maintenanceEnabled ? '#7f1d1d' : '#064e3b',
+                    color: maintenanceEnabled ? '#fca5a5' : '#a7f3d0',
+                    border: `1px solid ${maintenanceEnabled ? '#b91c1c' : '#059669'}`,
+                    padding: '4px 10px',
+                    borderRadius: '20px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: maintenanceEnabled ? '#ef4444' : '#10b981' }} />
+                  {maintenanceEnabled ? 'MODE MAINTENANCE AKTIF' : 'WEBSITE AKTIF (NORMAL)'}
+                </span>
+              </div>
+
+              <p style={{ fontSize: '13px', lineHeight: 1.6, color: '#cbd5e1', marginBottom: '16px' }}>
+                Aktifkan fitur ini jika Anda sedang melakukan pemeliharaan server, pembaruan skema, atau perbaikan jaringan. Saat aktif, pembaca umum akan diarahkan ke halaman khusus pemeliharaan sistem, sementara tim redaksi tetap dapat mengakses admin panel secara penuh.
+              </p>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
+                  Pesan Pemeliharaan Sistem untuk Pembaca:
+                </label>
+                <textarea
+                  rows={3}
+                  value={maintenanceMessage}
+                  onChange={(e) => setMaintenanceMessage(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #475569',
+                    backgroundColor: '#0f172a',
+                    color: '#ffffff',
+                    fontSize: '13px',
+                    lineHeight: 1.5,
+                    outline: 'none',
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px' }}>
+                {maintenanceEnabled ? (
+                  <button
+                    type="button"
+                    disabled={isSavingMaintenance}
+                    onClick={() => handleToggleMaintenance(false)}
+                    style={{
+                      backgroundColor: '#059669',
+                      color: '#ffffff',
+                      border: 'none',
+                      padding: '12px 18px',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      flex: 1,
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Power size={16} /> {isSavingMaintenance ? 'Memproses...' : 'MATIKAN MODE MAINTENANCE (KEMBALI NORMAL)'}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={isSavingMaintenance}
+                    onClick={() => handleToggleMaintenance(true)}
+                    style={{
+                      backgroundColor: '#dc2626',
+                      color: '#ffffff',
+                      border: 'none',
+                      padding: '12px 18px',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      flex: 1,
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Wrench size={16} /> {isSavingMaintenance ? 'Memproses...' : 'AKTIFKAN MODE MAINTENANCE'}
+                  </button>
+                )}
+              </div>
+            </div>
+
             {/* Database SQL Dump Export Card */}
             <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '24px', border: '1px solid #38bdf8' }}>
               <h3 style={{ fontSize: '16px', fontWeight: 800, marginTop: 0, marginBottom: '12px', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '8px' }}>

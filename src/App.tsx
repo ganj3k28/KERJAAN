@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, doc } from 'firebase/firestore';
+import { Wrench, Shield, Lock, AlertTriangle, RefreshCw } from 'lucide-react';
 import { db } from './lib/firebase';
 import { NewsArticle, Infographic, DataboksItem, VideoItem } from './types';
 import { initialData } from './initialData';
@@ -102,6 +103,12 @@ export default function App() {
   const [selectedInfographic, setSelectedInfographic] = useState<Infographic | null>(null);
   const [selectedVideo, setSelectedVideo] = useState<VideoItem | null>(null);
   const [showSubscribeModal, setShowSubscribeModal] = useState<boolean>(false);
+
+  // Maintenance Mode State
+  const [maintenance, setMaintenance] = useState<{ enabled: boolean; message: string }>({
+    enabled: false,
+    message: 'Website ASQI NEWS sedang dalam pemeliharaan sistem rutin untuk peningkatan infrastruktur & performa. Kami akan segera kembali dengan berita terbaru.',
+  });
 
   // Router listener
   useEffect(() => {
@@ -215,6 +222,7 @@ export default function App() {
     let unsubArticles: (() => void) | null = null;
     let unsubInfo: (() => void) | null = null;
     let unsubData: (() => void) | null = null;
+    let unsubMaint: (() => void) | null = null;
 
     try {
       unsubArticles = onSnapshot(collection(db, 'articles'), (snapshot) => {
@@ -239,9 +247,32 @@ export default function App() {
           setDataboksItems(snapshot.docs.map((d) => d.data() as DataboksItem));
         }
       });
+
+      unsubMaint = onSnapshot(doc(db, 'settings', 'maintenance'), (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          setMaintenance({
+            enabled: !!data.enabled,
+            message: data.message || 'Website ASQI NEWS sedang dalam pemeliharaan sistem rutin.',
+          });
+        }
+      });
     } catch (err) {
       console.error('Firestore real-time subscription notice:', err);
     }
+
+    // Also fetch maintenance from REST API
+    fetch('/api/maintenance')
+      .then((r) => r.json())
+      .then((res) => {
+        if (res?.success && res.maintenance) {
+          setMaintenance({
+            enabled: !!res.maintenance.enabled,
+            message: res.maintenance.message || 'Website ASQI NEWS sedang dalam pemeliharaan sistem rutin.',
+          });
+        }
+      })
+      .catch(() => {});
 
     const interval = setInterval(() => {
       fetchBackendData();
@@ -258,6 +289,7 @@ export default function App() {
       if (unsubArticles) unsubArticles();
       if (unsubInfo) unsubInfo();
       if (unsubData) unsubData();
+      if (unsubMaint) unsubMaint();
       clearInterval(interval);
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('visibilitychange', handleFocus);
@@ -303,6 +335,132 @@ export default function App() {
         onRefreshData={refreshLocalData}
         onNavigateHome={() => navigateTo('/')}
       />
+    );
+  }
+
+  // Maintenance Mode View for Public Readers
+  if (maintenance.enabled) {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          backgroundColor: '#0f172a',
+          color: '#ffffff',
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '24px',
+          textAlign: 'center',
+        }}
+      >
+        <div
+          style={{
+            maxWidth: '580px',
+            width: '100%',
+            backgroundColor: '#1e293b',
+            borderRadius: '16px',
+            border: '1px solid #334155',
+            padding: '36px 28px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
+          }}
+        >
+          {/* Logo */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
+            <Logo height={44} />
+          </div>
+
+          {/* Icon Badge */}
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '72px',
+              height: '72px',
+              borderRadius: '50%',
+              backgroundColor: '#7f1d1d',
+              border: '2px solid #ef4444',
+              color: '#fca5a5',
+              marginBottom: '20px',
+            }}
+          >
+            <Wrench size={36} />
+          </div>
+
+          <div style={{ marginBottom: '16px' }}>
+            <span
+              style={{
+                backgroundColor: '#dc2626',
+                color: '#ffffff',
+                padding: '4px 12px',
+                borderRadius: '20px',
+                fontSize: '11px',
+                fontWeight: 800,
+                letterSpacing: '0.05em',
+              }}
+            >
+              PEMELIHARAAN SISTEM RUKIN (MAINTENANCE MODE)
+            </span>
+          </div>
+
+          <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#f8fafc', marginBottom: '14px', lineHeight: 1.3 }}>
+            Situs Sedang Dalam Perawatan
+          </h1>
+
+          <p
+            style={{
+              fontSize: '13px',
+              lineHeight: 1.7,
+              color: '#cbd5e1',
+              marginBottom: '28px',
+              backgroundColor: '#0f172a',
+              padding: '16px',
+              borderRadius: '8px',
+              border: '1px solid #334155',
+              textAlign: 'left',
+            }}
+          >
+            📢 {maintenance.message}
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: '#94a3b8', marginBottom: '28px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981' }} />
+              Pembaruan Cloud Database &amp; REST API: <strong>Berjalan Live</strong>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#38bdf8' }} />
+              Penyelarasan Seluruh Browser: <strong>Otomatis (Real-time)</strong>
+            </div>
+          </div>
+
+          <button
+            onClick={() => navigateTo('/admin')}
+            style={{
+              backgroundColor: '#0284c7',
+              color: '#ffffff',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              fontSize: '13px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              boxShadow: '0 4px 12px rgba(2, 132, 199, 0.4)',
+            }}
+          >
+            <Lock size={16} /> Login Panel Redaksi / Staff Admin
+          </button>
+        </div>
+
+        <div style={{ marginTop: '24px', fontSize: '12px', color: '#64748b' }}>
+          © {new Date().getFullYear()} ASQI NEWS. Seluruh Hak Cipta Dilindungi.
+        </div>
+      </div>
     );
   }
 
