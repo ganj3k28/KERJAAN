@@ -172,38 +172,59 @@ export default function App() {
   // Fetch API data from Express backend with local fallback
   const fetchBackendData = useCallback(async () => {
     try {
-      let newsUrl = '/api/news';
-      const params = new URLSearchParams();
-      if (activeCategory && activeCategory !== 'Telaah') {
-        params.append('category', activeCategory);
-      }
-      if (searchQuery) {
-        params.append('search', searchQuery);
-      }
-      if (params.toString()) {
-        newsUrl += `?${params.toString()}`;
-      }
-
       const [resNews, resCarousel, resInfo, resData, resVid] = await Promise.all([
-        fetch(newsUrl).then((r) => r.json()).catch(() => null),
+        fetch('/api/news').then((r) => r.json()).catch(() => null),
         fetch('/api/carousel').then((r) => r.json()).catch(() => null),
         fetch('/api/infographics').then((r) => r.json()).catch(() => null),
         fetch('/api/databoks').then((r) => r.json()).catch(() => null),
         fetch('/api/videos').then((r) => r.json()).catch(() => null),
       ]);
 
-      if (resNews?.success) setAllArticles(resNews.articles);
-      if (resCarousel?.success) setCarouselSlides(resCarousel.slides);
-      if (resInfo?.success) setInfographics(resInfo.infographics);
-      if (resData?.success) setDataboksItems(resData.databoks);
-      if (resVid?.success) setVideos(resVid.videos);
+      if (resNews?.success && Array.isArray(resNews.articles)) {
+        setAllArticles(resNews.articles);
+        try { localStorage.setItem('asqi_articles', JSON.stringify(resNews.articles)); } catch {}
+      }
+      if (resCarousel?.success && Array.isArray(resCarousel.slides)) {
+        setCarouselSlides(resCarousel.slides);
+        try { localStorage.setItem('asqi_carousel', JSON.stringify(resCarousel.slides)); } catch {}
+      }
+      if (resInfo?.success && Array.isArray(resInfo.infographics)) {
+        setInfographics(resInfo.infographics);
+        try { localStorage.setItem('asqi_infographics', JSON.stringify(resInfo.infographics)); } catch {}
+      }
+      if (resData?.success && Array.isArray(resData.databoks)) {
+        setDataboksItems(resData.databoks);
+        try { localStorage.setItem('asqi_databoks', JSON.stringify(resData.databoks)); } catch {}
+      }
+      if (resVid?.success && Array.isArray(resVid.videos)) {
+        setVideos(resVid.videos);
+        try { localStorage.setItem('asqi_videos', JSON.stringify(resVid.videos)); } catch {}
+      }
     } catch {
       refreshLocalData();
     }
-  }, [activeCategory, searchQuery, refreshLocalData]);
+  }, [refreshLocalData]);
 
+  // Initial fetch + Auto sync every 5 seconds & on tab focus
   useEffect(() => {
     fetchBackendData();
+
+    const interval = setInterval(() => {
+      fetchBackendData();
+    }, 5000);
+
+    const handleFocus = () => {
+      fetchBackendData();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('visibilitychange', handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('visibilitychange', handleFocus);
+    };
   }, [fetchBackendData]);
 
   // Filter articles according to category and search query

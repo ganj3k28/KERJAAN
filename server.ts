@@ -353,6 +353,106 @@ app.post('/api/seed', (req, res) => {
   res.json({ success: true, message: 'Database berhasil di-reset ke data sampel awal' });
 });
 
+// Helper to escape SQL string literal
+function sqlEscape(val: any): string {
+  if (val === null || val === undefined) return 'NULL';
+  if (typeof val === 'number' || typeof val === 'boolean') return val ? '1' : '0';
+  const str = typeof val === 'object' ? JSON.stringify(val) : String(val);
+  return "'" + str.replace(/\\/g, '\\\\').replace(/'/g, "''").replace(/\n/g, '\\n').replace(/\r/g, '\\r') + "'";
+}
+
+// GET /api/export-sql - Generate phpMyAdmin SQL Dump file
+app.get('/api/export-sql', (req, res) => {
+  const data = getStoreData();
+  const users = getUsersData();
+
+  let sql = `-- ========================================================\n`;
+  sql += `-- ASQI NEWS.com Database Dump (phpMyAdmin / MySQL Ready)\n`;
+  sql += `-- Export Date: ${new Date().toISOString()}\n`;
+  sql += `-- ========================================================\n\n`;
+
+  sql += `SET FOREIGN_KEY_CHECKS = 0;\n`;
+  sql += `SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";\n`;
+  sql += `START TRANSACTION;\n`;
+  sql += `SET time_zone = "+00:00";\n\n`;
+
+  // 1. Table articles
+  sql += `-- --------------------------------------------------------\n`;
+  sql += `-- Table structure for \`articles\`\n`;
+  sql += `-- --------------------------------------------------------\n`;
+  sql += `CREATE TABLE IF NOT EXISTS \`articles\` (\n`;
+  sql += `  \`id\` varchar(64) NOT NULL,\n`;
+  sql += `  \`title\` varchar(500) NOT NULL,\n`;
+  sql += `  \`category\` varchar(100) NOT NULL,\n`;
+  sql += `  \`publishedAt\` varchar(100) DEFAULT NULL,\n`;
+  sql += `  \`views\` int(11) DEFAULT 1,\n`;
+  sql += `  \`snippet\` text DEFAULT NULL,\n`;
+  sql += `  \`content\` longtext NOT NULL,\n`;
+  sql += `  \`author\` varchar(150) DEFAULT 'Redaksi ASQI',\n`;
+  sql += `  \`image\` longtext DEFAULT NULL,\n`;
+  sql += `  \`imageCaption\` text DEFAULT NULL,\n`;
+  sql += `  \`middleImage\` longtext DEFAULT NULL,\n`;
+  sql += `  \`middleImageCaption\` text DEFAULT NULL,\n`;
+  sql += `  \`galleryImages\` longtext DEFAULT NULL,\n`;
+  sql += `  \`isFeatured\` tinyint(1) DEFAULT 0,\n`;
+  sql += `  \`isPopular\` tinyint(1) DEFAULT 0,\n`;
+  sql += `  \`tags\` text DEFAULT NULL,\n`;
+  sql += `  PRIMARY KEY (\`id\`)\n`;
+  sql += `) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;\n\n`;
+
+  if (data.articles && data.articles.length > 0) {
+    sql += `-- Dumping data for table \`articles\`\n`;
+    data.articles.forEach((art: NewsArticle) => {
+      sql += `INSERT INTO \`articles\` (\`id\`, \`title\`, \`category\`, \`publishedAt\`, \`views\`, \`snippet\`, \`content\`, \`author\`, \`image\`, \`imageCaption\`, \`middleImage\`, \`middleImageCaption\`, \`galleryImages\`, \`isFeatured\`, \`isPopular\`, \`tags\`) VALUES (\n`;
+      sql += `  ${sqlEscape(art.id)},\n`;
+      sql += `  ${sqlEscape(art.title)},\n`;
+      sql += `  ${sqlEscape(art.category)},\n`;
+      sql += `  ${sqlEscape(art.publishedAt)},\n`;
+      sql += `  ${art.views || 1},\n`;
+      sql += `  ${sqlEscape(art.snippet)},\n`;
+      sql += `  ${sqlEscape(art.content)},\n`;
+      sql += `  ${sqlEscape(art.author)},\n`;
+      sql += `  ${sqlEscape(art.image)},\n`;
+      sql += `  ${sqlEscape(art.imageCaption || '')},\n`;
+      sql += `  ${sqlEscape(art.middleImage || '')},\n`;
+      sql += `  ${sqlEscape(art.middleImageCaption || '')},\n`;
+      sql += `  ${sqlEscape(art.galleryImages || [])},\n`;
+      sql += `  ${art.isFeatured ? 1 : 0},\n`;
+      sql += `  ${art.isPopular ? 1 : 0},\n`;
+      sql += `  ${sqlEscape(art.tags || [])}\n`;
+      sql += `) ON DUPLICATE KEY UPDATE \`title\`=VALUES(\`title\`), \`content\`=VALUES(\`content\`), \`image\`=VALUES(\`image\`);\n\n`;
+    });
+  }
+
+  // 2. Table admin_users
+  sql += `-- --------------------------------------------------------\n`;
+  sql += `-- Table structure for \`admin_users\`\n`;
+  sql += `-- --------------------------------------------------------\n`;
+  sql += `CREATE TABLE IF NOT EXISTS \`admin_users\` (\n`;
+  sql += `  \`id\` varchar(64) NOT NULL,\n`;
+  sql += `  \`username\` varchar(100) NOT NULL,\n`;
+  sql += `  \`name\` varchar(150) NOT NULL,\n`;
+  sql += `  \`role\` varchar(50) DEFAULT 'editor',\n`;
+  sql += `  PRIMARY KEY (\`id\`),\n`;
+  sql += `  UNIQUE KEY \`username\` (\`username\`)\n`;
+  sql += `) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;\n\n`;
+
+  if (users && users.length > 0) {
+    sql += `-- Dumping data for table \`admin_users\`\n`;
+    users.forEach((u: AdminUser) => {
+      sql += `INSERT INTO \`admin_users\` (\`id\`, \`username\`, \`name\`, \`role\`) VALUES (${sqlEscape(u.id)}, ${sqlEscape(u.username)}, ${sqlEscape(u.name)}, ${sqlEscape(u.role)}) ON DUPLICATE KEY UPDATE \`name\`=VALUES(\`name\`);\n`;
+    });
+    sql += `\n`;
+  }
+
+  sql += `SET FOREIGN_KEY_CHECKS = 1;\n`;
+  sql += `COMMIT;\n`;
+
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="asquinews_database.sql"');
+  res.send(sql);
+});
+
 // Vite Middleware for Development & SPA Fallback
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {

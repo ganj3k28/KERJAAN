@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Lock, UserCheck, Key, LogOut, ExternalLink, Plus, Trash2, Edit, RefreshCw, Layers, FileText, BarChart2, Users, AlertCircle, CheckCircle } from 'lucide-react';
+import { Shield, Lock, UserCheck, Key, LogOut, ExternalLink, Plus, Trash2, Edit, RefreshCw, Layers, FileText, BarChart2, Users, AlertCircle, CheckCircle, Download } from 'lucide-react';
 import { NewsArticle, Infographic, DataboksItem, AdminUser, AdminRole } from '../types';
 import { initialData } from '../initialData';
 import { Logo } from './Logo';
@@ -1226,27 +1226,92 @@ export const AdminPage: React.FC<AdminPageProps> = ({
 
         {/* TAB 4: SYSTEM & DATABASE RESET (SUPERADMIN ONLY) */}
         {activeTab === 'system' && user.role === 'superadmin' && (
-          <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '24px', border: '1px solid #334155', maxWidth: '640px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 800, marginTop: 0, marginBottom: '16px', color: '#f8fafc' }}>
-              Status Sistem Backend Express &amp; Database Store
-            </h3>
-            <p style={{ fontSize: '13px', lineHeight: 1.6, color: '#cbd5e1' }}>
-              Sistem backend berjalan pada Node.js + Express REST API dengan JSON Store persisten (<code style={{ color: '#38bdf8' }}>data/newsStore.json</code> &amp; <code style={{ color: '#38bdf8' }}>data/usersStore.json</code>).
-            </p>
-
-            <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #334155' }}>
-              <h4 style={{ fontSize: '14px', fontWeight: 700, color: '#fca5a5', marginBottom: '10px' }}>
-                Reset Database Ke Data sampel Awal
-              </h4>
-              <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '14px' }}>
-                Jika Anda ingin mengembalikan sampel data berita utama ke keadaan semula, klik tombol di bawah ini.
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+            {/* Database SQL Dump Export Card */}
+            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '24px', border: '1px solid #38bdf8' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 800, marginTop: 0, marginBottom: '12px', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                🗄️ Database SQL File (phpMyAdmin Ready)
+              </h3>
+              <p style={{ fontSize: '13px', lineHeight: 1.6, color: '#cbd5e1', marginBottom: '16px' }}>
+                Seluruh berita, gambar, galeri, dan akun admin kini tersimpan terpusat di Server API. Anda dapat mengunduh skema &amp; isi data langsung dalam format file <code style={{ color: '#38bdf8' }}>.sql</code> untuk di-import ke <strong>phpMyAdmin / cPanel / MariaDB Hosting</strong> Anda.
               </p>
-              <button
-                onClick={handleResetSeed}
-                style={{ backgroundColor: '#dc2626', color: '#ffffff', border: 'none', padding: '10px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
-              >
-                <RefreshCw size={14} /> Reset Data Sample Awal
-              </button>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <a
+                  href="/api/export-sql"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    backgroundColor: '#0284c7',
+                    color: '#ffffff',
+                    padding: '12px 18px',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    textDecoration: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    textAlign: 'center'
+                  }}
+                >
+                  <Download size={16} /> Download File .SQL (asquinews_database.sql)
+                </a>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await onRefreshData();
+                    setMsg({ type: 'success', text: 'Data dari server backend berhasil disinkronkan!' });
+                  }}
+                  style={{
+                    backgroundColor: '#0f172a',
+                    color: '#38bdf8',
+                    border: '1px solid #38bdf8',
+                    padding: '10px 16px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <RefreshCw size={14} /> Sinkronkan Server Live Sekarang
+                </button>
+              </div>
+
+              <div style={{ marginTop: '16px', padding: '10px', backgroundColor: '#0f172a', borderRadius: '6px', fontSize: '11px', color: '#94a3b8' }}>
+                ℹ️ <strong>Informasi Koneksi SQL Hosting:</strong> Konfigurasi database MySQL dapat diatur melalui file <code style={{ color: '#f8fafc' }}>.env.example</code> (MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE).
+              </div>
+            </div>
+
+            {/* System Status & Reset */}
+            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '24px', border: '1px solid #334155' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 800, marginTop: 0, marginBottom: '16px', color: '#f8fafc' }}>
+                Status Backend &amp; Data Persisten
+              </h3>
+              <p style={{ fontSize: '13px', lineHeight: 1.6, color: '#cbd5e1' }}>
+                Sistem backend menggunakan Node.js + Express REST API dengan JSON Store persisten (<code style={{ color: '#38bdf8' }}>data/newsStore.json</code> &amp; <code style={{ color: '#38bdf8' }}>data/usersStore.json</code>) yang terhubung ke seluruh browser client secara otomatis.
+              </p>
+
+              <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #334155' }}>
+                <h4 style={{ fontSize: '14px', fontWeight: 700, color: '#fca5a5', marginBottom: '10px' }}>
+                  Reset Database Ke Data Sampel Awal
+                </h4>
+                <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '14px' }}>
+                  Jika Anda ingin mengembalikan sampel data berita ke keadaan bawaan awal, klik tombol di bawah ini.
+                </p>
+                <button
+                  onClick={handleResetSeed}
+                  style={{ backgroundColor: '#dc2626', color: '#ffffff', border: 'none', padding: '10px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                >
+                  <RefreshCw size={14} /> Reset Data Sampel Awal
+                </button>
+              </div>
             </div>
           </div>
         )}
