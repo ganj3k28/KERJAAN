@@ -1,0 +1,63 @@
+export interface NewsArticle {
+  id: string;
+  title: string;
+  category: string;
+  publishedAt: string;
+  views: number;
+  snippet: string;
+  content: string;
+  author: string;
+  image: string;
+  isFeatured?: boolean;
+  isPopular?: boolean;
+  tags?: string[];
+}
+
+export interface Infographic {
+  id: string;
+  title: string;
+  imageUrl: string;
+  createdAt: string;
+}
+
+export interface DataboksItem {
+  id: string;
+  title: string;
+  category?: string;
+  description?: string;
+}
+
+export interface VideoItem {
+  id: string;
+  title: string;
+  thumbnailUrl: string;
+  videoUrl?: string;
+}
+
+export interface EventItem {
+  id: string;
+  title: string;
+  date: string;
+  location?: string;
+  description?: string;
+}
+
+export type AdminRole = 'superadmin' | 'editor' | 'author';
+
+export interface AdminUser {
+  id: string;
+  username: string;
+  password?: string;
+  name: string;
+  role: AdminRole;
+  createdAt?: string;
+}
+
+export interface InitialData {
+  articles: NewsArticle[];
+  carousel: NewsArticle[];
+  infographics: Infographic[];
+  databoks: DataboksItem[];
+  videos: VideoItem[];
+  events: EventItem[];
+}
