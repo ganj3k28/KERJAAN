@@ -185,7 +185,22 @@ app.get('/api/news/:id', (req, res) => {
   if (article) {
     article.views = (article.views || 0) + 1;
     saveStoreData(data);
+    setDoc(doc(db, 'articles', article.id), sanitizeForFirestore(article)).catch(() => {});
     res.json({ success: true, article });
+  } else {
+    res.status(404).json({ success: false, message: 'Berita tidak ditemukan' });
+  }
+});
+
+// POST /api/news/:id/view - Explicit view count increment
+app.post('/api/news/:id/view', (req, res) => {
+  const data = getStoreData();
+  const article = (data.articles || []).find((a: NewsArticle) => a.id === req.params.id);
+  if (article) {
+    article.views = (article.views || 0) + 1;
+    saveStoreData(data);
+    setDoc(doc(db, 'articles', article.id), sanitizeForFirestore(article)).catch(() => {});
+    res.json({ success: true, views: article.views });
   } else {
     res.status(404).json({ success: false, message: 'Berita tidak ditemukan' });
   }
@@ -518,6 +533,77 @@ app.post('/api/admin/users', (req, res) => {
   saveUsersData(users);
 
   res.json({ success: true, user: newUser });
+});
+
+// DEFAULT CATEGORIES
+const DEFAULT_CATEGORIES_LIST = [
+  'Beranda',
+  'Berita Terbaru',
+  'Nasional',
+  'Daerah',
+  'Pelayanan Publik',
+  'PROFIL TOKOH PELAYANAN',
+  'BUMN',
+  'BUMD',
+  'KORPORASI',
+  'Bisnis',
+  'ASQI',
+];
+
+// GET /api/categories
+app.get('/api/categories', (req, res) => {
+  const data = getStoreData();
+  const categories = data.categories && data.categories.length > 0 ? data.categories : DEFAULT_CATEGORIES_LIST;
+  res.json({ success: true, categories });
+});
+
+// POST /api/categories
+app.post('/api/categories', (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ success: false, message: 'Nama kategori wajib diisi' });
+    }
+
+    const catName = name.trim();
+    const data = getStoreData();
+    let currentCats: string[] = data.categories && data.categories.length > 0 ? data.categories : [...DEFAULT_CATEGORIES_LIST];
+
+    if (currentCats.some((c) => c.toLowerCase() === catName.toLowerCase())) {
+      return res.status(400).json({ success: false, message: `Kategori '${catName}' sudah ada` });
+    }
+
+    currentCats.push(catName);
+    data.categories = currentCats;
+    saveStoreData(data);
+
+    // Sync to Firestore
+    setDoc(doc(db, 'settings', 'categories'), { list: currentCats, updatedAt: new Date().toISOString() }).catch(() => {});
+
+    res.json({ success: true, categories: currentCats, message: `Kategori '${catName}' berhasil ditambahkan` });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err?.message || 'Gagal menambahkan kategori' });
+  }
+});
+
+// DELETE /api/categories/:name
+app.delete('/api/categories/:name', (req, res) => {
+  try {
+    const target = decodeURIComponent(req.params.name).trim();
+    const data = getStoreData();
+    let currentCats: string[] = data.categories && data.categories.length > 0 ? data.categories : [...DEFAULT_CATEGORIES_LIST];
+
+    currentCats = currentCats.filter((c) => c.toLowerCase() !== target.toLowerCase());
+    data.categories = currentCats;
+    saveStoreData(data);
+
+    // Sync to Firestore
+    setDoc(doc(db, 'settings', 'categories'), { list: currentCats, updatedAt: new Date().toISOString() }).catch(() => {});
+
+    res.json({ success: true, categories: currentCats, message: `Kategori '${target}' berhasil dihapus` });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err?.message || 'Gagal menghapus kategori' });
+  }
 });
 
 // DELETE /api/admin/users/:id

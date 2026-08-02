@@ -86,7 +86,7 @@ export const NewsFeedSection: React.FC<NewsFeedSectionProps> = ({
                         {article.title}
                       </a>
                       <div className="news-meta">
-                        {article.category} • {article.publishedAt.toUpperCase()}
+                        <span style={{ fontWeight: 600, color: '#0369a1' }}>{article.category}</span> • {article.publishedAt.toUpperCase()} • <span style={{ color: '#0284c7', fontWeight: 600 }}>👁️ {(article.views || 0).toLocaleString('id-ID')} dibaca</span>
                       </div>
                     </div>
                     <p className="news-snippet">{article.snippet}</p>

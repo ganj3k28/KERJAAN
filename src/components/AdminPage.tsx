@@ -1,5 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Lock, UserCheck, Key, LogOut, ExternalLink, Plus, Trash2, Edit, RefreshCw, Layers, FileText, BarChart2, Users, AlertCircle, CheckCircle, Download, Wrench, Power } from 'lucide-react';
+import {
+  Shield,
+  Lock,
+  UserCheck,
+  Key,
+  LogOut,
+  ExternalLink,
+  Plus,
+  Trash2,
+  Edit,
+  RefreshCw,
+  Layers,
+  FileText,
+  BarChart2,
+  Users,
+  AlertCircle,
+  CheckCircle,
+  Download,
+  Wrench,
+  Power,
+  Eye,
+  TrendingUp,
+  FolderPlus,
+  Tag,
+  PieChart,
+} from 'lucide-react';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { NewsArticle, Infographic, DataboksItem, AdminUser, AdminRole } from '../types';
@@ -13,14 +38,31 @@ const DEFAULT_ADMIN_USERS: AdminUser[] = [
   { id: 'usr-3', username: 'jurnalis', name: 'Jurnalis Senior', role: 'author' },
 ];
 
+const DEFAULT_CATEGORIES_FALLBACK = [
+  'Berita Terbaru',
+  'Nasional',
+  'Daerah',
+  'Pelayanan Publik',
+  'PROFIL TOKOH PELAYANAN',
+  'BUMN',
+  'BUMD',
+  'KORPORASI',
+  'Bisnis',
+  'ASQI',
+];
+
 interface AdminPageProps {
   articles: NewsArticle[];
+  categories?: string[];
+  onRefreshCategories?: () => void;
   onRefreshData: () => void;
   onNavigateHome: () => void;
 }
 
 export const AdminPage: React.FC<AdminPageProps> = ({
   articles,
+  categories = [],
+  onRefreshCategories,
   onRefreshData,
   onNavigateHome,
 }) => {
@@ -41,7 +83,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   const [isSubmittingLogin, setIsSubmittingLogin] = useState(false);
 
   // Admin CMS Tabs
-  const [activeTab, setActiveTab] = useState<'articles' | 'databoks' | 'users' | 'system'>('articles');
+  const [activeTab, setActiveTab] = useState<'articles' | 'categories' | 'insight' | 'databoks' | 'users' | 'system'>('articles');
+
+  // Category Management State
+  const [newCatName, setNewCatName] = useState('');
+  const [isSavingCategory, setIsSavingCategory] = useState(false);
 
   // Form states for Articles
   const [title, setTitle] = useState('');
@@ -125,6 +171,59 @@ export const AdminPage: React.FC<AdminPageProps> = ({
       setIsSavingMaintenance(false);
     }
   };
+
+  const handleAddCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = newCatName.trim();
+    if (!trimmed) return;
+    setIsSavingCategory(true);
+
+    try {
+      const res = await fetch('/api/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmed }),
+      }).then((r) => r.json());
+
+      if (res.success) {
+        setMsg({ type: 'success', text: `Kategori '${trimmed}' berhasil ditambahkan!` });
+        setNewCatName('');
+        if (onRefreshCategories) onRefreshCategories();
+      } else {
+        setMsg({ type: 'error', text: res.message || 'Gagal menambahkan kategori baru' });
+      }
+    } catch {
+      setMsg({ type: 'error', text: 'Gagal terhubung ke server saat menyimpan kategori baru' });
+    } finally {
+      setIsSavingCategory(false);
+    }
+  };
+
+  const handleDeleteCategory = async (catName: string) => {
+    if (!window.confirm(`Hapus kategori '${catName}' secara permanen?`)) return;
+
+    try {
+      const res = await fetch(`/api/categories/${encodeURIComponent(catName)}`, {
+        method: 'DELETE',
+      }).then((r) => r.json());
+
+      if (res.success) {
+        setMsg({ type: 'success', text: `Kategori '${catName}' berhasil dihapus.` });
+        if (onRefreshCategories) onRefreshCategories();
+      } else {
+        setMsg({ type: 'error', text: res.message || 'Gagal menghapus kategori' });
+      }
+    } catch {
+      setMsg({ type: 'error', text: 'Gagal terhubung ke server saat menghapus kategori' });
+    }
+  };
+
+  const effectiveCategories = categories && categories.length > 0
+    ? categories
+    : DEFAULT_CATEGORIES_FALLBACK;
+
+  const totalViews = articles.reduce((acc, a) => acc + (a.views || 0), 0);
+  const sortedArticlesByViews = [...articles].sort((a, b) => (b.views || 0) - (a.views || 0));
 
   // Set default author when user logs in
   useEffect(() => {
@@ -600,9 +699,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({
               >
                 <div>
                   <strong style={{ color: '#a78bfa', display: 'block' }}>👑 Super Admin (admin)</strong>
-                  <span style={{ color: '#94a3b8', fontSize: '11px' }}>Akses penuh: Berita, Databoks, Kelola User &amp; Reset</span>
+                  <span style={{ color: '#94a3b8', fontSize: '11px' }}>Akses penuh: Berita, Kategori, Insight, User &amp; Maintenance</span>
                 </div>
-                <span style={{ fontSize: '11px', backgroundColor: '#3b82f6', color: '#fff', padding: '2px 6px', borderRadius: '4px' }}>admin123</span>
+                <span style={{ fontSize: '11px', backgroundColor: '#334155', color: '#cbd5e1', padding: '2px 8px', borderRadius: '4px' }}>Pilih Akun</span>
               </button>
 
               <button
@@ -612,9 +711,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({
               >
                 <div>
                   <strong style={{ color: '#38bdf8', display: 'block' }}>✏️ Chief Editor (editor)</strong>
-                  <span style={{ color: '#94a3b8', fontSize: '11px' }}>Kelola &amp; hapus Berita, Infografik, Databoks</span>
+                  <span style={{ color: '#94a3b8', fontSize: '11px' }}>Kelola Berita, Kategori, Infografik, Databoks</span>
                 </div>
-                <span style={{ fontSize: '11px', backgroundColor: '#0284c7', color: '#fff', padding: '2px 6px', borderRadius: '4px' }}>editor123</span>
+                <span style={{ fontSize: '11px', backgroundColor: '#334155', color: '#cbd5e1', padding: '2px 8px', borderRadius: '4px' }}>Pilih Akun</span>
               </button>
 
               <button
@@ -626,7 +725,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                   <strong style={{ color: '#34d399', display: 'block' }}>✍️ Jurnalis Senior (jurnalis)</strong>
                   <span style={{ color: '#94a3b8', fontSize: '11px' }}>Hak akses menerbitkan &amp; me-review berita</span>
                 </div>
-                <span style={{ fontSize: '11px', backgroundColor: '#10b981', color: '#fff', padding: '2px 6px', borderRadius: '4px' }}>jurnalis123</span>
+                <span style={{ fontSize: '11px', backgroundColor: '#334155', color: '#cbd5e1', padding: '2px 8px', borderRadius: '4px' }}>Pilih Akun</span>
               </button>
             </div>
           </div>
@@ -733,97 +832,169 @@ export const AdminPage: React.FC<AdminPageProps> = ({
           </div>
         )}
 
-        {/* Tab Navigation Menu */}
-        <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid #334155', paddingBottom: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
-          {(user.role === 'superadmin' || user.role === 'editor' || user.role === 'author') && (
-            <button
-              onClick={() => setActiveTab('articles')}
-              style={{
-                backgroundColor: activeTab === 'articles' ? '#0284c7' : '#1e293b',
-                color: '#ffffff',
-                border: 'none',
-                padding: '10px 18px',
-                borderRadius: '6px',
-                fontSize: '13px',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
-              <FileText size={16} /> Kelola Artikel Berita
-            </button>
-          )}
+        {/* Admin Dashboard Grid Layout: Left Sidebar + Right Content */}
+        <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+          {/* LEFT SIDEBAR NAVIGATION MENU */}
+          <aside style={{ width: '250px', flexShrink: 0, backgroundColor: '#1e293b', borderRadius: '8px', border: '1px solid #334155', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8', letterSpacing: '0.05em', textTransform: 'uppercase', paddingBottom: '8px', borderBottom: '1px solid #334155' }}>
+              PANEL MENU ADMIN
+            </div>
 
-          {(user.role === 'superadmin' || user.role === 'editor') && (
-            <button
-              onClick={() => setActiveTab('databoks')}
-              style={{
-                backgroundColor: activeTab === 'databoks' ? '#0284c7' : '#1e293b',
-                color: '#ffffff',
-                border: 'none',
-                padding: '10px 18px',
-                borderRadius: '6px',
-                fontSize: '13px',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
-              <BarChart2 size={16} /> Infografik &amp; Databoks
-            </button>
-          )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {(user.role === 'superadmin' || user.role === 'editor' || user.role === 'author') && (
+                <button
+                  onClick={() => setActiveTab('articles')}
+                  style={{
+                    backgroundColor: activeTab === 'articles' ? '#0284c7' : '#0f172a',
+                    color: '#ffffff',
+                    border: `1px solid ${activeTab === 'articles' ? '#38bdf8' : '#334155'}`,
+                    padding: '10px 14px',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    textAlign: 'left',
+                    width: '100%',
+                  }}
+                >
+                  <FileText size={16} style={{ color: activeTab === 'articles' ? '#ffffff' : '#38bdf8' }} /> Kelola Berita
+                </button>
+              )}
 
-          {user.role === 'superadmin' && (
-            <button
-              onClick={() => setActiveTab('users')}
-              style={{
-                backgroundColor: activeTab === 'users' ? '#7c3aed' : '#1e293b',
-                color: '#ffffff',
-                border: 'none',
-                padding: '10px 18px',
-                borderRadius: '6px',
-                fontSize: '13px',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
-              <Users size={16} /> Hak Akses &amp; Manajemen User Admin
-            </button>
-          )}
+              {(user.role === 'superadmin' || user.role === 'editor' || user.role === 'author') && (
+                <button
+                  onClick={() => setActiveTab('categories')}
+                  style={{
+                    backgroundColor: activeTab === 'categories' ? '#0284c7' : '#0f172a',
+                    color: '#ffffff',
+                    border: `1px solid ${activeTab === 'categories' ? '#38bdf8' : '#334155'}`,
+                    padding: '10px 14px',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    textAlign: 'left',
+                    width: '100%',
+                  }}
+                >
+                  <FolderPlus size={16} style={{ color: activeTab === 'categories' ? '#ffffff' : '#a78bfa' }} /> Kelola Kategori
+                </button>
+              )}
 
-          {user.role === 'superadmin' && (
-            <button
-              onClick={() => setActiveTab('system')}
-              style={{
-                backgroundColor: activeTab === 'system' ? '#475569' : '#1e293b',
-                color: '#ffffff',
-                border: 'none',
-                padding: '10px 18px',
-                borderRadius: '6px',
-                fontSize: '13px',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
-              <Layers size={16} /> System &amp; Reset DB
-            </button>
-          )}
-        </div>
+              {(user.role === 'superadmin' || user.role === 'editor' || user.role === 'author') && (
+                <button
+                  onClick={() => setActiveTab('insight')}
+                  style={{
+                    backgroundColor: activeTab === 'insight' ? '#0284c7' : '#0f172a',
+                    color: '#ffffff',
+                    border: `1px solid ${activeTab === 'insight' ? '#38bdf8' : '#334155'}`,
+                    padding: '10px 14px',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    textAlign: 'left',
+                    width: '100%',
+                  }}
+                >
+                  <Eye size={16} style={{ color: activeTab === 'insight' ? '#ffffff' : '#34d399' }} /> Insight Pembaca
+                </button>
+              )}
 
-        {/* TAB 1: ARTICLES MANAGEMENT (SUPERADMIN, EDITOR, AUTHOR) */}
-        {activeTab === 'articles' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
-            {/* Form Create/Edit Article */}
+              {(user.role === 'superadmin' || user.role === 'editor') && (
+                <button
+                  onClick={() => setActiveTab('databoks')}
+                  style={{
+                    backgroundColor: activeTab === 'databoks' ? '#0284c7' : '#0f172a',
+                    color: '#ffffff',
+                    border: `1px solid ${activeTab === 'databoks' ? '#38bdf8' : '#334155'}`,
+                    padding: '10px 14px',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    textAlign: 'left',
+                    width: '100%',
+                  }}
+                >
+                  <BarChart2 size={16} style={{ color: activeTab === 'databoks' ? '#ffffff' : '#f59e0b' }} /> Databoks &amp; Infografik
+                </button>
+              )}
+
+              {user.role === 'superadmin' && (
+                <button
+                  onClick={() => setActiveTab('users')}
+                  style={{
+                    backgroundColor: activeTab === 'users' ? '#7c3aed' : '#0f172a',
+                    color: '#ffffff',
+                    border: `1px solid ${activeTab === 'users' ? '#a78bfa' : '#334155'}`,
+                    padding: '10px 14px',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    textAlign: 'left',
+                    width: '100%',
+                  }}
+                >
+                  <Users size={16} style={{ color: activeTab === 'users' ? '#ffffff' : '#a78bfa' }} /> Kelola User &amp; Akses
+                </button>
+              )}
+
+              {user.role === 'superadmin' && (
+                <button
+                  onClick={() => setActiveTab('system')}
+                  style={{
+                    backgroundColor: activeTab === 'system' ? '#475569' : '#0f172a',
+                    color: '#ffffff',
+                    border: `1px solid ${activeTab === 'system' ? '#94a3b8' : '#334155'}`,
+                    padding: '10px 14px',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    textAlign: 'left',
+                    width: '100%',
+                  }}
+                >
+                  <Layers size={16} style={{ color: activeTab === 'system' ? '#ffffff' : '#cbd5e1' }} /> Sistem &amp; Maintenance
+                </button>
+              )}
+            </div>
+
+            {/* Sidebar Quick Stats Widget */}
+            <div style={{ marginTop: 'auto', backgroundColor: '#0f172a', padding: '12px', borderRadius: '6px', border: '1px solid #334155', fontSize: '11px', color: '#94a3b8', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ fontWeight: 700, color: '#f8fafc', marginBottom: '2px' }}>📊 Ringkasan Portal:</div>
+              <div>📄 Total Berita: <strong style={{ color: '#38bdf8' }}>{articles.length}</strong></div>
+              <div>📂 Total Kategori: <strong style={{ color: '#a78bfa' }}>{effectiveCategories.length}</strong></div>
+              <div>👁️ Total Pembaca: <strong style={{ color: '#34d399' }}>{totalViews.toLocaleString('id-ID')}</strong></div>
+            </div>
+          </aside>
+
+          {/* MAIN CONTENT AREA */}
+          <main style={{ flex: 1, minWidth: '300px' }}>
+            {/* TAB 1: ARTICLES MANAGEMENT */}
+            {activeTab === 'articles' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
+                {/* Form Create/Edit Article */}
             <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '24px', border: '1px solid #334155' }}>
               <h3 style={{ fontSize: '16px', fontWeight: 800, marginTop: 0, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Plus size={18} style={{ color: '#38bdf8' }} /> {editingArticleId ? 'Edit Artikel Berita' : 'Tulis &amp; Terbitkan Berita Baru'}
@@ -853,15 +1024,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                     onChange={(e) => setCategory(e.target.value)}
                     style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#ffffff', fontSize: '14px' }}
                   >
-                    <option value="Berita Terbaru">Berita Terbaru</option>
-                    <option value="Nasional">Nasional</option>
-                    <option value="Daerah">Daerah</option>
-                    <option value="Pelayanan Publik">Pelayanan Publik</option>
-                    <option value="PROFIL TOKOH PELAYANAN">PROFIL TOKOH PELAYANAN</option>
-                    <option value="BUMN & BUMD">BUMN &amp; BUMD</option>
-                    <option value="KORPORASI">KORPORASI</option>
-                    <option value="Bisnis">Bisnis</option>
-                    <option value="ASQI">ASQI</option>
+                    {effectiveCategories
+                      .filter((c) => c !== 'Beranda')
+                      .map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
                   </select>
                 </div>
 
@@ -1075,7 +1244,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                       <div>
                         <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>{art.title}</div>
                         <div style={{ fontSize: '12px', color: '#94a3b8' }}>
-                          <span style={{ color: '#38bdf8' }}>{art.category}</span> • Oleh: {art.author} • {art.publishedAt}
+                          <span style={{ color: '#38bdf8' }}>{art.category}</span> • Oleh: {art.author} • {art.publishedAt} • <strong style={{ color: '#34d399' }}>👁️ {(art.views || 0).toLocaleString('id-ID')} dibaca</strong>
                         </div>
                       </div>
                     </div>
@@ -1106,7 +1275,180 @@ export const AdminPage: React.FC<AdminPageProps> = ({
           </div>
         )}
 
-        {/* TAB 2: INFOGRAPHICS & DATABOKS (SUPERADMIN & EDITOR) */}
+        {/* TAB 2: KELOLA KATEGORI (SUPERADMIN, EDITOR, AUTHOR) */}
+        {activeTab === 'categories' && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+            {/* Form Add New Category */}
+            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '24px', border: '1px solid #334155' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 800, marginTop: 0, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <FolderPlus size={18} style={{ color: '#38bdf8' }} /> Buat Kategori Berita Baru
+              </h3>
+
+              <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.5, marginBottom: '16px' }}>
+                Admin dapat menambah kategori berita secara terpisah 1 per 1. Kategori baru akan langsung sinkron ke menu navigasi header portal dan pilihan penulisan berita.
+              </p>
+
+              <form onSubmit={handleAddCategory} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
+                    Nama Kategori Baru *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newCatName}
+                    onChange={(e) => setNewCatName(e.target.value)}
+                    placeholder="Contoh: Kesehatan, Pendidikan, Otomotif, Hukum..."
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#ffffff', fontSize: '14px' }}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSavingCategory}
+                  style={{ backgroundColor: '#0284c7', color: '#ffffff', border: 'none', padding: '12px', borderRadius: '6px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                >
+                  <Plus size={16} /> {isSavingCategory ? 'Menyimpan...' : 'Tambah Kategori Baru'}
+                </button>
+              </form>
+            </div>
+
+            {/* Category List */}
+            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '24px', border: '1px solid #334155' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 800, marginTop: 0, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Tag size={18} style={{ color: '#a78bfa' }} /> Daftar Kategori Terdaftar ({effectiveCategories.length})
+              </h3>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
+                {effectiveCategories.map((cat) => {
+                  const articleCount = articles.filter((a) => a.category.toLowerCase() === cat.toLowerCase()).length;
+                  const isDefault = ['Beranda', 'Berita Terbaru', 'Nasional', 'Daerah', 'Pelayanan Publik'].includes(cat);
+
+                  return (
+                    <div
+                      key={cat}
+                      style={{
+                        backgroundColor: '#0f172a',
+                        padding: '12px 14px',
+                        borderRadius: '8px',
+                        border: '1px solid #334155',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <div>
+                        <strong style={{ color: '#ffffff', fontSize: '13px', display: 'block' }}>{cat}</strong>
+                        <span style={{ fontSize: '11px', color: '#94a3b8' }}>{articleCount} berita</span>
+                      </div>
+
+                      {!isDefault && (user.role === 'superadmin' || user.role === 'editor') && (
+                        <button
+                          onClick={() => handleDeleteCategory(cat)}
+                          style={{ backgroundColor: '#7f1d1d', border: 'none', color: '#fca5a5', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                          title="Hapus Kategori"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: INSIGHT PEMBACA & BERITA TERPOPULER AUTOMATIC (ALL ROLES) */}
+        {activeTab === 'insight' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* Summary Metric Cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+              <div style={{ backgroundColor: '#1e293b', padding: '20px', borderRadius: '8px', border: '1px solid #38bdf8' }}>
+                <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 600 }}>Total Pembaca Akumulatif</div>
+                <div style={{ fontSize: '26px', fontWeight: 800, color: '#38bdf8', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Eye size={22} /> {totalViews.toLocaleString('id-ID')}
+                </div>
+                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Total pembaca berita</div>
+              </div>
+
+              <div style={{ backgroundColor: '#1e293b', padding: '20px', borderRadius: '8px', border: '1px solid #a78bfa' }}>
+                <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 600 }}>Total Berita Terbit</div>
+                <div style={{ fontSize: '26px', fontWeight: 800, color: '#a78bfa', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FileText size={22} /> {articles.length}
+                </div>
+                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Artikel terpublikasi</div>
+              </div>
+
+              <div style={{ backgroundColor: '#1e293b', padding: '20px', borderRadius: '8px', border: '1px solid #34d399' }}>
+                <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 600 }}>Rata-Rata Pembaca / Berita</div>
+                <div style={{ fontSize: '26px', fontWeight: 800, color: '#34d399', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <BarChart2 size={22} /> {articles.length > 0 ? Math.round(totalViews / articles.length).toLocaleString('id-ID') : 0}
+                </div>
+                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Rerata ketertarikan pembaca</div>
+              </div>
+
+              <div style={{ backgroundColor: '#1e293b', padding: '20px', borderRadius: '8px', border: '1px solid #f59e0b' }}>
+                <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 600 }}>Berita Terpopuler #1 Saat Ini</div>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: '#f8fafc', marginTop: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {sortedArticlesByViews[0]?.title || 'Belum ada data'}
+                </div>
+                <div style={{ fontSize: '12px', color: '#f59e0b', fontWeight: 700, marginTop: '4px' }}>
+                  👁️ {(sortedArticlesByViews[0]?.views || 0).toLocaleString('id-ID')} dibaca
+                </div>
+              </div>
+            </div>
+
+            {/* Automatic Ranking Table */}
+            <div style={{ backgroundColor: '#1e293b', padding: '24px', borderRadius: '8px', border: '1px solid #334155' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <TrendingUp size={18} style={{ color: '#ef4444' }} /> Ranking Berita Terpopuler Otomatis Teratas (Berdasarkan Pembaca)
+                </h3>
+                <span style={{ fontSize: '12px', color: '#34d399', backgroundColor: '#0f172a', padding: '4px 10px', borderRadius: '20px', border: '1px solid #059669' }}>
+                  🟢 Update Otomatis
+                </span>
+              </div>
+
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid #334155', color: '#94a3b8' }}>
+                      <th style={{ padding: '10px 12px', width: '70px' }}>Peringkat</th>
+                      <th style={{ padding: '10px 12px' }}>Judul Berita</th>
+                      <th style={{ padding: '10px 12px', width: '140px' }}>Kategori</th>
+                      <th style={{ padding: '10px 12px', width: '130px' }}>Penulis</th>
+                      <th style={{ padding: '10px 12px', width: '140px', textAlign: 'right' }}>Jumlah Pembaca</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedArticlesByViews.map((art, idx) => (
+                      <tr key={art.id} style={{ borderBottom: '1px solid #334155' }}>
+                        <td style={{ padding: '12px', fontWeight: 800, color: idx < 3 ? '#f59e0b' : '#94a3b8' }}>
+                          {idx === 0 ? '🥇 #1' : idx === 1 ? '🥈 #2' : idx === 2 ? '🥉 #3' : `#${idx + 1}`}
+                        </td>
+                        <td style={{ padding: '12px', fontWeight: 700, color: '#f8fafc' }}>
+                          {art.title}
+                        </td>
+                        <td style={{ padding: '12px' }}>
+                          <span style={{ backgroundColor: '#0f172a', padding: '3px 8px', borderRadius: '4px', fontSize: '11px', color: '#38bdf8', border: '1px solid #334155' }}>
+                            {art.category}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px', color: '#cbd5e1' }}>{art.author || 'Tim Redaksi'}</td>
+                        <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700, color: '#38bdf8' }}>
+                          👁️ {(art.views || 0).toLocaleString('id-ID')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: INFOGRAPHICS & DATABOKS */}
         {activeTab === 'databoks' && (user.role === 'superadmin' || user.role === 'editor') && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
             {/* Infographic Form */}
@@ -1488,6 +1830,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({
             </div>
           </div>
         )}
+          </main>
+        </div>
       </div>
     </div>
   );

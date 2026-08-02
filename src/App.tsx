@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { collection, onSnapshot, doc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, setDoc } from 'firebase/firestore';
 import { Wrench, Shield, Lock, AlertTriangle, RefreshCw } from 'lucide-react';
 import { db } from './lib/firebase';
 import { NewsArticle, Infographic, DataboksItem, VideoItem } from './types';
@@ -97,6 +97,19 @@ export default function App() {
   // Filter & Search states
   const [activeCategory, setActiveCategory] = useState<string>('Beranda');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [categories, setCategories] = useState<string[]>([
+    'Beranda',
+    'Berita Terbaru',
+    'Nasional',
+    'Daerah',
+    'Pelayanan Publik',
+    'PROFIL TOKOH PELAYANAN',
+    'BUMN',
+    'BUMD',
+    'KORPORASI',
+    'Bisnis',
+    'ASQI',
+  ]);
 
   // Modals
   const [selectedArticle, setSelectedArticle] = useState<NewsArticle | null>(null);
@@ -214,15 +227,44 @@ export default function App() {
     }
   }, [refreshLocalData]);
 
+  const fetchCategories = useCallback(() => {
+    fetch('/api/categories')
+      .then((r) => r.json())
+      .then((res) => {
+        if (res?.success && Array.isArray(res.categories) && res.categories.length > 0) {
+          setCategories(res.categories);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleOpenArticle = useCallback((art: NewsArticle) => {
+    const newViews = (art.views || 0) + 1;
+    const updatedArt = { ...art, views: newViews };
+    setSelectedArticle(updatedArt);
+
+    setAllArticles((prev) =>
+      prev.map((a) => (a.id === art.id ? { ...a, views: newViews } : a))
+    );
+
+    fetch(`/api/news/${art.id}/view`, { method: 'POST' }).catch(() => {});
+    try {
+      setDoc(doc(db, 'articles', art.id), { views: newViews }, { merge: true }).catch(() => {});
+    } catch {}
+  }, []);
+
   // Initial fetch + Auto sync every 3 seconds & on tab focus + Real-time Firestore Cloud Database listener
   useEffect(() => {
     fetchBackendData();
+
+    fetchCategories();
 
     // Live Firebase Firestore listener across all browsers & devices
     let unsubArticles: (() => void) | null = null;
     let unsubInfo: (() => void) | null = null;
     let unsubData: (() => void) | null = null;
     let unsubMaint: (() => void) | null = null;
+    let unsubCats: (() => void) | null = null;
 
     try {
       unsubArticles = onSnapshot(collection(db, 'articles'), (snapshot) => {
@@ -255,6 +297,15 @@ export default function App() {
             enabled: !!data.enabled,
             message: data.message || 'Website ASQI NEWS sedang dalam pemeliharaan sistem rutin.',
           });
+        }
+      });
+
+      unsubCats = onSnapshot(doc(db, 'settings', 'categories'), (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          if (Array.isArray(data?.list) && data.list.length > 0) {
+            setCategories(data.list);
+          }
         }
       });
     } catch (err) {
@@ -319,7 +370,7 @@ export default function App() {
     return matchesCategory && matchesSearch;
   });
 
-  const popularArticles = allArticles.filter((art) => art.isPopular);
+  const popularArticles = [...allArticles].sort((a, b) => (b.views || 0) - (a.views || 0));
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -338,6 +389,8 @@ export default function App() {
     return (
       <AdminPage
         articles={allArticles}
+        categories={categories}
+        onRefreshCategories={fetchCategories}
         onRefreshData={refreshLocalData}
         onNavigateHome={() => navigateTo('/')}
       />
@@ -482,6 +535,7 @@ export default function App() {
       {/* Navigation Menu */}
       <Navbar
         activeCategory={activeCategory}
+        categories={categories}
         onSelectCategory={(cat) => {
           setActiveCategory(cat);
           setSearchQuery('');
@@ -493,15 +547,15 @@ export default function App() {
         {/* Main Content Left */}
         <main className="main-content">
           {/* Main Carousel / Headline (shown on main page view) */}
-          {activeCategory === 'Telaah' && !searchQuery && (
+          {(activeCategory === 'Beranda' || activeCategory === 'Berita Terbaru' || activeCategory === 'Telaah' || !activeCategory) && !searchQuery && (
             <CarouselSection
               slides={carouselSlides}
-              onArticleClick={(article) => setSelectedArticle(article)}
+              onArticleClick={(article) => handleOpenArticle(article)}
             />
           )}
 
           {/* Infografik Terbaru */}
-          {activeCategory === 'Telaah' && !searchQuery && (
+          {(activeCategory === 'Beranda' || activeCategory === 'Berita Terbaru' || activeCategory === 'Telaah' || !activeCategory) && !searchQuery && (
             <InfographicsSection
               infographics={infographics}
               onSelectInfographic={(info) => setSelectedInfographic(info)}
@@ -514,7 +568,7 @@ export default function App() {
             databoksItems={databoksItems}
             activeCategory={activeCategory}
             searchQuery={searchQuery}
-            onArticleClick={(article) => setSelectedArticle(article)}
+            onArticleClick={(article) => handleOpenArticle(article)}
             onSelectDataboks={(databoksItem) => {
               // Open a simple preview or search related to databoks item
               setSearchQuery(databoksItem.title.split(' ')[0]);
@@ -528,7 +582,7 @@ export default function App() {
           {/* Artikel Terpopuler */}
           <PopularSidebar
             popularArticles={popularArticles}
-            onArticleClick={(article) => setSelectedArticle(article)}
+            onArticleClick={(article) => handleOpenArticle(article)}
           />
 
           {/* Kalender Event */}
@@ -626,7 +680,7 @@ export default function App() {
         <ArticleModal
           article={selectedArticle}
           onClose={() => setSelectedArticle(null)}
-          onSelectRelated={(art) => setSelectedArticle(art)}
+          onSelectRelated={(art) => handleOpenArticle(art)}
         />
       )}
 

@@ -159,7 +159,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({ article, onClose, on
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Eye size={14} color="#0284c7" />
-              <span>{article.views || 1} dibaca</span>
+              <span><strong>{(article.views || 1).toLocaleString('id-ID')}</strong> kali dibaca</span>
             </div>
           </div>
 

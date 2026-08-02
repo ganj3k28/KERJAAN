@@ -1,28 +1,36 @@
 import React from 'react';
 
+export const DEFAULT_NAV_CATEGORIES = [
+  'Beranda',
+  'Berita Terbaru',
+  'Nasional',
+  'Daerah',
+  'Pelayanan Publik',
+  'PROFIL TOKOH PELAYANAN',
+  'BUMN',
+  'BUMD',
+  'KORPORASI',
+  'Bisnis',
+  'ASQI',
+];
+
 interface NavbarProps {
   activeCategory: string;
   onSelectCategory: (category: string) => void;
+  categories?: string[];
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ activeCategory, onSelectCategory }) => {
-  const categories = [
-    'Beranda',
-    'Berita Terbaru',
-    'Nasional',
-    'Daerah',
-    'Pelayanan Publik',
-    'PROFIL TOKOH PELAYANAN',
-    'BUMN & BUMD',
-    'KORPORASI',
-    'Bisnis',
-    'ASQI',
-  ];
+export const Navbar: React.FC<NavbarProps> = ({
+  activeCategory,
+  onSelectCategory,
+  categories = DEFAULT_NAV_CATEGORIES,
+}) => {
+  const displayCategories = categories && categories.length > 0 ? categories : DEFAULT_NAV_CATEGORIES;
 
   return (
     <nav className="nav-bar">
       <div className="nav-container">
-        {categories.map((cat) => {
+        {displayCategories.map((cat) => {
           const isActive =
             activeCategory.toLowerCase() === cat.toLowerCase() ||
             (cat === 'Beranda' && (activeCategory === 'Beranda' || !activeCategory));
@@ -45,4 +53,5 @@ export const Navbar: React.FC<NavbarProps> = ({ activeCategory, onSelectCategory
     </nav>
   );
 };
+
 
