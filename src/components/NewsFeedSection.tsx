@@ -21,7 +21,8 @@ export const NewsFeedSection: React.FC<NewsFeedSectionProps> = ({
   onSelectDataboks,
   onClearFilter,
 }) => {
-  const isFiltered = activeCategory !== 'Telaah' || searchQuery !== '';
+  const isMainView = activeCategory === 'Beranda' || activeCategory === 'Berita Terbaru' || activeCategory === 'Telaah' || !activeCategory;
+  const isFiltered = !isMainView || searchQuery !== '';
 
   return (
     <section className="section-block">
@@ -29,7 +30,7 @@ export const NewsFeedSection: React.FC<NewsFeedSectionProps> = ({
         <h3>
           {searchQuery
             ? `Hasil Pencarian: "${searchQuery}"`
-            : activeCategory !== 'Telaah'
+            : !isMainView
             ? `Kategori: ${activeCategory}`
             : 'Berita Terbaru Lainnya'}
         </h3>

@@ -95,7 +95,7 @@ export default function App() {
   });
 
   // Filter & Search states
-  const [activeCategory, setActiveCategory] = useState<string>('Telaah');
+  const [activeCategory, setActiveCategory] = useState<string>('Beranda');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Modals
@@ -298,10 +298,16 @@ export default function App() {
 
   // Filter articles according to category and search query
   const filteredArticles = allArticles.filter((art) => {
-    const matchesCategory =
+    const isAllCategory =
+      activeCategory === 'Beranda' ||
+      activeCategory === 'Berita Terbaru' ||
       activeCategory === 'Telaah' ||
-      !activeCategory ||
-      art.category.toLowerCase() === activeCategory.toLowerCase();
+      !activeCategory;
+
+    const matchesCategory =
+      isAllCategory ||
+      art.category.toLowerCase() === activeCategory.toLowerCase() ||
+      (art.tags && art.tags.some((t) => t.toLowerCase() === activeCategory.toLowerCase()));
 
     const matchesSearch =
       !searchQuery ||
@@ -320,7 +326,7 @@ export default function App() {
   };
 
   const handleClearFilter = () => {
-    setActiveCategory('Telaah');
+    setActiveCategory('Beranda');
     setSearchQuery('');
   };
 

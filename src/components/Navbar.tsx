@@ -7,36 +7,42 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ activeCategory, onSelectCategory }) => {
   const categories = [
-    'Telaah',
-    'Sorot',
-    'Analisis Data',
-    'Infografis',
-    'Opini',
-    'Laporan Khusus',
-    'Finansial',
-    'Digital',
-    'Monopedia',
-    'Ekonomi Hijau',
-    'Otomotif',
+    'Beranda',
+    'Berita Terbaru',
+    'Nasional',
+    'Daerah',
+    'Pelayanan Publik',
+    'PROFIL TOKOH PELAYANAN',
+    'BUMN & BUMD',
+    'KORPORASI',
+    'Bisnis',
+    'ASQI',
   ];
 
   return (
     <nav className="nav-bar">
       <div className="nav-container">
-        {categories.map((cat) => (
-          <a
-            key={cat}
-            href={`#${cat.toLowerCase()}`}
-            className={activeCategory.toLowerCase() === cat.toLowerCase() ? 'active' : ''}
-            onClick={(e) => {
-              e.preventDefault();
-              onSelectCategory(cat);
-            }}
-          >
-            {cat}
-          </a>
-        ))}
+        {categories.map((cat) => {
+          const isActive =
+            activeCategory.toLowerCase() === cat.toLowerCase() ||
+            (cat === 'Beranda' && (activeCategory === 'Beranda' || !activeCategory));
+
+          return (
+            <a
+              key={cat}
+              href={`#${cat.toLowerCase().replace(/\s+/g, '-')}`}
+              className={isActive ? 'active' : ''}
+              onClick={(e) => {
+                e.preventDefault();
+                onSelectCategory(cat);
+              }}
+            >
+              {cat}
+            </a>
+          );
+        })}
       </div>
     </nav>
   );
 };
+

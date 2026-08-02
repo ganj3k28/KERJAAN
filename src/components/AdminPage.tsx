@@ -45,7 +45,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
 
   // Form states for Articles
   const [title, setTitle] = useState('');
-  const [category, setCategory] = useState('Finansial');
+  const [category, setCategory] = useState('Berita Terbaru');
   const [snippet, setSnippet] = useState('');
   const [content, setContent] = useState('');
   const [author, setAuthor] = useState('');
@@ -335,7 +335,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   const resetArticleForm = () => {
     setEditingArticleId(null);
     setTitle('');
-    setCategory('Finansial');
+    setCategory('Berita Terbaru');
     setSnippet('');
     setContent('');
     setImage('');
@@ -853,12 +853,15 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                     onChange={(e) => setCategory(e.target.value)}
                     style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#ffffff', fontSize: '14px' }}
                   >
-                    <option value="Finansial">Finansial &amp; Pasarmodal</option>
-                    <option value="Analisis Data">Analisis Data &amp; Databoks</option>
-                    <option value="Otomotif">Otomotif &amp; Industri</option>
-                    <option value="Teknologi">Teknologi &amp; AI</option>
-                    <option value="Makro">Makro Ekonomi &amp; Kebijakan</option>
-                    <option value="Properti">Properti &amp; Infrastruktur</option>
+                    <option value="Berita Terbaru">Berita Terbaru</option>
+                    <option value="Nasional">Nasional</option>
+                    <option value="Daerah">Daerah</option>
+                    <option value="Pelayanan Publik">Pelayanan Publik</option>
+                    <option value="PROFIL TOKOH PELAYANAN">PROFIL TOKOH PELAYANAN</option>
+                    <option value="BUMN & BUMD">BUMN &amp; BUMD</option>
+                    <option value="KORPORASI">KORPORASI</option>
+                    <option value="Bisnis">Bisnis</option>
+                    <option value="ASQI">ASQI</option>
                   </select>
                 </div>
 
