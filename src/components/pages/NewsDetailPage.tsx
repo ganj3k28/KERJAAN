@@ -46,7 +46,7 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    if (article) {
+    if (article?.id) {
       fetch(`/api/news/${article.id}`)
         .then((res) => res.json())
         .then((data) => {
@@ -67,7 +67,7 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
           setRelatedArticles(rel);
         });
     }
-  }, [article, allArticles]);
+  }, [article?.id]);
 
   const handleShare = () => {
     if (navigator.clipboard) {
