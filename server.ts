@@ -779,6 +779,69 @@ app.get('/api/export-sql', (req, res) => {
   res.send(sql);
 });
 
+// Image endpoint for OpenGraph / WhatsApp / Social Media preview
+app.get(['/api/news/:id/image', '/api/articles/:id/image'], async (req, res) => {
+  try {
+    const articleId = req.params.id;
+    const data = getStoreData();
+    const articles: NewsArticle[] = data.articles || [];
+    const article =
+      articles.find((a) => a.id.toLowerCase() === articleId.toLowerCase()) ||
+      articles.find((a) => a.id.toLowerCase().includes(articleId.toLowerCase()));
+
+    if (!article || !article.image) {
+      return res.redirect('https://asqinews.com/asqinews-logo.svg');
+    }
+
+    const img = article.image.trim();
+
+    // Case 1: Base64 data URI (uploaded via Admin)
+    if (img.startsWith('data:image/')) {
+      const matches = img.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+      if (matches && matches.length === 3) {
+        const mimeType = matches[1];
+        const buffer = Buffer.from(matches[2], 'base64');
+        res.setHeader('Content-Type', mimeType);
+        res.setHeader('Content-Length', buffer.length.toString());
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        return res.send(buffer);
+      }
+    }
+
+    // Case 2: External HTTP/HTTPS URL
+    if (img.startsWith('http://') || img.startsWith('https://')) {
+      try {
+        const response = await fetch(img, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          },
+        });
+        if (response.ok) {
+          const contentType = response.headers.get('content-type') || 'image/jpeg';
+          const arrayBuffer = await response.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+          res.setHeader('Content-Type', contentType);
+          res.setHeader('Content-Length', buffer.length.toString());
+          res.setHeader('Cache-Control', 'public, max-age=86400');
+          return res.send(buffer);
+        }
+      } catch (err) {
+        console.error('Error fetching image for preview proxy:', err);
+      }
+      return res.redirect(img);
+    }
+
+    // Case 3: Relative path
+    const protocol = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'https';
+    const host = req.get('host') || 'asqinews.com';
+    const fullImgUrl = `${protocol}://${host}${img.startsWith('/') ? '' : '/'}${img}`;
+    return res.redirect(fullImgUrl);
+  } catch (err) {
+    console.error('Error serving article image:', err);
+    return res.redirect('https://asqinews.com/asqinews-logo.svg');
+  }
+});
+
 function escapeHtmlAttr(str: string): string {
   if (!str) return '';
   return str
@@ -819,11 +882,7 @@ function injectMetaTags(html: string, req: express.Request): string {
             }
             const cleanDesc = escapeHtmlAttr(rawDesc);
 
-            let imageUrl = article.image || '/asqinews-logo.svg';
-            if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
-              imageUrl = `${protocol}://${host}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
-            }
-            const cleanImg = escapeHtmlAttr(imageUrl);
+            const cleanImg = `${protocol}://${host}/api/news/${article.id}/image`;
 
             html = html
               .replace(/<title>.*?<\/title>/gi, `<title>${cleanTitle}</title>`)
@@ -833,6 +892,10 @@ function injectMetaTags(html: string, req: express.Request): string {
               .replace(/<meta property="og:title" content=".*?" \/>/gi, `<meta property="og:title" content="${cleanArticleTitle}" />`)
               .replace(/<meta property="og:description" content=".*?" \/>/gi, `<meta property="og:description" content="${cleanDesc}" />`)
               .replace(/<meta property="og:image" content=".*?" \/>/gi, `<meta property="og:image" content="${cleanImg}" />`)
+              .replace(/<meta property="og:image:secure_url" content=".*?" \/>/gi, `<meta property="og:image:secure_url" content="${cleanImg}" />`)
+              .replace(/<meta property="og:image:type" content=".*?" \/>/gi, `<meta property="og:image:type" content="image/jpeg" />`)
+              .replace(/<meta property="og:image:width" content=".*?" \/>/gi, `<meta property="og:image:width" content="1200" />`)
+              .replace(/<meta property="og:image:height" content=".*?" \/>/gi, `<meta property="og:image:height" content="630" />`)
               .replace(/<meta property="og:url" content=".*?" \/>/gi, `<meta property="og:url" content="${escapeHtmlAttr(fullUrl)}" />`)
               .replace(/<meta property="twitter:title" content=".*?" \/>/gi, `<meta property="twitter:title" content="${cleanArticleTitle}" />`)
               .replace(/<meta property="twitter:description" content=".*?" \/>/gi, `<meta property="twitter:description" content="${cleanDesc}" />`)
