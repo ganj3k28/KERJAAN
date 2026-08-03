@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 140" width="100%" height="100%">
+  <rect width="420" height="140" fill="#ffffff"/>
+  <defs>
+    <linearGradient id="asqiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00a3e0" />
+      <stop offset="50%" stop-color="#0083be" />
+      <stop offset="100%" stop-color="#006394" />
+    </linearGradient>
+  </defs>
+  
+  <g transform="translate(10, 10)">
+    <!-- ASQI Monogram Logo -->
+    <g fill="none" stroke="url(#asqiGrad)" stroke-width="12" stroke-linecap="square" stroke-linejoin="miter">
+      <!-- A -->
+      <path d="M 16,102 L 16,18 L 48,18 L 48,60 M 16,60 L 48,60" />
+      <!-- S -->
+      <path d="M 108,24 C 108,18 72,18 72,39 C 72,60 108,60 108,81 C 108,102 72,102 72,96" stroke-linecap="round" stroke-linejoin="round" />
+      <!-- Q -->
+      <path d="M 122,18 L 168,18 L 168,82 L 122,82 Z" />
+      <path d="M 152,65 L 178,98 L 186,98" stroke-width="10" />
+      <!-- I -->
+      <path d="M 198,18 L 198,102" />
+    </g>
+
+    <!-- Text: Asosiasi Service Quality Indonesia -->
+    <g font-family="Arial, 'Helvetica Neue', Helvetica, sans-serif" fill="#000000">
+      <text x="216" y="36" font-size="24" font-weight="normal" letter-spacing="-0.2px">Asosiasi</text>
+      <text x="216" y="66" font-size="24" font-weight="normal" letter-spacing="-0.2px">Service Quality</text>
+      <text x="216" y="96" font-size="24" font-weight="normal" letter-spacing="-0.2px">Indonesia</text>
+    </g>
+  </g>
+</svg>

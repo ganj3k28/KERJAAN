@@ -26,6 +26,7 @@ import {
   PieChart,
   Sliders,
   Menu,
+  Globe,
 } from 'lucide-react';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -89,7 +90,64 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   const [isSubmittingLogin, setIsSubmittingLogin] = useState(false);
 
   // Admin CMS Tabs
-  const [activeTab, setActiveTab] = useState<'articles' | 'header' | 'categories' | 'insight' | 'databoks' | 'users' | 'system'>('articles');
+  const [activeTab, setActiveTab] = useState<'articles' | 'header' | 'categories' | 'insight' | 'databoks' | 'about_asqi' | 'users' | 'system'>('articles');
+
+  // Tentang ASQI State
+  const [aboutLogoUrl, setAboutLogoUrl] = useState('/asqi-logo-about.svg');
+  const [aboutTargetUrl, setAboutTargetUrl] = useState('https://asqi.or.id/');
+  const [aboutTitle, setAboutTitle] = useState('TENTANG ASQI');
+  const [aboutCompanyName, setAboutCompanyName] = useState('Asosiasi Service Quality Indonesia (ASQI)');
+  const [aboutDescription, setAboutDescription] = useState('Wadah jaringan profesional, pakar, dan praktisi manajemen mutu layanan terbesar di Indonesia.');
+  const [isSavingAbout, setIsSavingAbout] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/about-asqi')
+      .then((r) => r.json())
+      .then((res) => {
+        if (res?.success && res.aboutAsqi) {
+          setAboutLogoUrl(res.aboutAsqi.logoUrl || '/asqi-logo-about.svg');
+          setAboutTargetUrl(res.aboutAsqi.targetUrl || 'https://asqi.or.id/');
+          setAboutTitle(res.aboutAsqi.title || 'TENTANG ASQI');
+          setAboutCompanyName(res.aboutAsqi.companyName || 'Asosiasi Service Quality Indonesia (ASQI)');
+          setAboutDescription(res.aboutAsqi.description || '');
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSaveAboutAsqi = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingAbout(true);
+    setMsg(null);
+    try {
+      const payload = {
+        logoUrl: aboutLogoUrl,
+        targetUrl: aboutTargetUrl,
+        title: aboutTitle,
+        companyName: aboutCompanyName,
+        description: aboutDescription,
+        updatedAt: new Date().toISOString(),
+      };
+
+      await setDoc(doc(db, 'settings', 'about_asqi'), payload).catch(() => {});
+
+      const res = await fetch('/api/about-asqi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }).then((r) => r.json());
+
+      if (res?.success) {
+        setMsg({ type: 'success', text: 'Pengaturan Tentang ASQI berhasil disimpan!' });
+      } else {
+        setMsg({ type: 'error', text: res?.message || 'Gagal menyimpan data Tentang ASQI' });
+      }
+    } catch (err: any) {
+      setMsg({ type: 'error', text: err?.message || 'Terjadi kesalahan saat menyimpan' });
+    } finally {
+      setIsSavingAbout(false);
+    }
+  };
 
   // Header Management State
   const [localHeaderSettings, setLocalHeaderSettings] = useState<HeaderSettings>(() => {
@@ -1051,6 +1109,29 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                 </button>
               )}
 
+              {(user.role === 'superadmin' || user.role === 'editor') && (
+                <button
+                  onClick={() => setActiveTab('about_asqi')}
+                  style={{
+                    backgroundColor: activeTab === 'about_asqi' ? '#0284c7' : '#0f172a',
+                    color: '#ffffff',
+                    border: `1px solid ${activeTab === 'about_asqi' ? '#38bdf8' : '#334155'}`,
+                    padding: '10px 14px',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    textAlign: 'left',
+                    width: '100%',
+                  }}
+                >
+                  <Globe size={16} style={{ color: activeTab === 'about_asqi' ? '#ffffff' : '#38bdf8' }} /> Tentang ASQI (Banner)
+                </button>
+              )}
+
               {user.role === 'superadmin' && (
                 <button
                   onClick={() => setActiveTab('users')}
@@ -1864,6 +1945,171 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                 </button>
               </form>
             </div>
+          </div>
+        )}
+
+        {/* TAB: TENTANG ASQI (BANNER MANAGEMENT) */}
+        {activeTab === 'about_asqi' && (user.role === 'superadmin' || user.role === 'editor') && (
+          <div style={{ backgroundColor: '#1e293b', padding: '28px', borderRadius: '12px', border: '1px solid #334155' }}>
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: 800, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Globe size={20} color="#38bdf8" /> Pengaturan Banner / Logo "Tentang ASQI"
+            </h3>
+            <p style={{ margin: '0 0 24px 0', fontSize: '13px', color: '#94a3b8', lineHeight: '1.5' }}>
+              Upload gambar logo/banner ASQI asli secara langsung dan atur tautan tujuan ketika pengunjung mengeklik banner di halaman utama.
+            </p>
+
+            <form onSubmit={handleSaveAboutAsqi} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div>
+                <ImageUploadInput
+                  label="Upload Gambar / Logo ASQI Asli"
+                  value={aboutLogoUrl}
+                  onChange={(val) => setAboutLogoUrl(val)}
+                  helperText="Klik atau tarik file gambar logo ASQI Anda ke kotak ini (PNG, JPG, WEBP, SVG) atau gunakan URL gambar."
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#e2e8f0', marginBottom: '6px' }}>
+                    Judul Header Section
+                  </label>
+                  <input
+                    type="text"
+                    value={aboutTitle}
+                    onChange={(e) => setAboutTitle(e.target.value)}
+                    placeholder="Contoh: TENTANG ASQI"
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid #334155',
+                      backgroundColor: '#0f172a',
+                      color: '#ffffff',
+                      fontSize: '14px',
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#e2e8f0', marginBottom: '6px' }}>
+                    Tautan / Link Tujuan (URL)
+                  </label>
+                  <input
+                    type="url"
+                    value={aboutTargetUrl}
+                    onChange={(e) => setAboutTargetUrl(e.target.value)}
+                    placeholder="https://asqi.or.id/"
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid #334155',
+                      backgroundColor: '#0f172a',
+                      color: '#ffffff',
+                      fontSize: '14px',
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#e2e8f0', marginBottom: '6px' }}>
+                  Nama Organisasi / Perusahaan (Opsional)
+                </label>
+                <input
+                  type="text"
+                  value={aboutCompanyName}
+                  onChange={(e) => setAboutCompanyName(e.target.value)}
+                  placeholder="Contoh: Asosiasi Service Quality Indonesia (ASQI)"
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #334155',
+                    backgroundColor: '#0f172a',
+                    color: '#ffffff',
+                    fontSize: '14px',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#e2e8f0', marginBottom: '6px' }}>
+                  Deskripsi / Keterangan Singkat (Opsional)
+                </label>
+                <textarea
+                  rows={3}
+                  value={aboutDescription}
+                  onChange={(e) => setAboutDescription(e.target.value)}
+                  placeholder="Keterangan singkat tentang ASQI (dapat dikosongkan jika gambar yang diunggah sudah berisi teks lengkap)."
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #334155',
+                    backgroundColor: '#0f172a',
+                    color: '#ffffff',
+                    fontSize: '14px',
+                    resize: 'vertical',
+                  }}
+                />
+              </div>
+
+              {/* Pratinjau Tampilan Live */}
+              <div style={{ backgroundColor: '#0f172a', padding: '16px', borderRadius: '8px', border: '1px solid #334155' }}>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: '#38bdf8', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Pratinjau Tampilan di Halaman Depan (Preview)
+                </div>
+                <div style={{ background: '#ffffff', borderRadius: '10px', padding: '16px', border: '1px solid #cbd5e1' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 800, color: '#0284c7', marginBottom: '10px', borderBottom: '1px solid #e2e8f0', paddingBottom: '6px' }}>
+                    {aboutTitle || 'TENTANG ASQI'}
+                  </div>
+                  <a
+                    href={aboutTargetUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', textDecoration: 'none' }}
+                  >
+                    {aboutLogoUrl ? (
+                      <img
+                        src={aboutLogoUrl}
+                        alt="Preview Logo ASQI"
+                        style={{ maxWidth: '100%', maxHeight: '160px', objectFit: 'contain' }}
+                      />
+                    ) : (
+                      <div style={{ color: '#94a3b8', fontSize: '13px', padding: '20px' }}>Belum ada gambar logo yang dipilih</div>
+                    )}
+                    {aboutCompanyName && <div style={{ fontSize: '14px', fontWeight: 700, color: '#0369a1' }}>{aboutCompanyName}</div>}
+                    {aboutDescription && <div style={{ fontSize: '12px', color: '#475569', textAlign: 'center' }}>{aboutDescription}</div>}
+                  </a>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+                <button
+                  type="submit"
+                  disabled={isSavingAbout}
+                  style={{
+                    backgroundColor: '#0284c7',
+                    color: '#ffffff',
+                    border: 'none',
+                    padding: '12px 24px',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: 700,
+                    cursor: isSavingAbout ? 'not-allowed' : 'pointer',
+                    opacity: isSavingAbout ? 0.7 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  {isSavingAbout ? 'Menyimpan...' : 'Simpan Pengaturan tentang ASQI'}
+                </button>
+              </div>
+            </form>
           </div>
         )}
 

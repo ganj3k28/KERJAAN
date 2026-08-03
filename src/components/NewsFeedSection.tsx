@@ -1,10 +1,11 @@
 import React from 'react';
-import { NewsArticle, DataboksItem } from '../types';
+import { NewsArticle, DataboksItem, AboutAsqiData } from '../types';
 import { DataboksSection } from './DataboksSection';
 
 interface NewsFeedSectionProps {
   articles: NewsArticle[];
   databoksItems: DataboksItem[];
+  aboutAsqiData?: AboutAsqiData;
   activeCategory: string;
   searchQuery: string;
   onArticleClick: (article: NewsArticle) => void;
@@ -15,6 +16,7 @@ interface NewsFeedSectionProps {
 export const NewsFeedSection: React.FC<NewsFeedSectionProps> = ({
   articles,
   databoksItems,
+  aboutAsqiData,
   activeCategory,
   searchQuery,
   onArticleClick,
@@ -112,9 +114,9 @@ export const NewsFeedSection: React.FC<NewsFeedSectionProps> = ({
                   </div>
                 </article>
 
-                {/* Embed Databoks Widget after 2nd item if not heavily filtered */}
-                {index === 1 && databoksItems.length > 0 && !searchQuery && (
-                  <DataboksSection databoksItems={databoksItems} onSelectDataboks={onSelectDataboks} />
+                {/* Embed Tentang ASQI Widget after 2nd item if not searching */}
+                {index === 1 && !searchQuery && (
+                  <DataboksSection databoksItems={databoksItems} onSelectDataboks={onSelectDataboks} aboutAsqiData={aboutAsqiData} />
                 )}
               </React.Fragment>
             );

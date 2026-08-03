@@ -86,6 +86,14 @@ export interface SubscriberUser {
   isSubscribed: boolean;
 }
 
+export interface AboutAsqiData {
+  logoUrl?: string;
+  targetUrl?: string;
+  title?: string;
+  companyName?: string;
+  description?: string;
+}
+
 export interface InitialData {
   articles: NewsArticle[];
   carousel: NewsArticle[];

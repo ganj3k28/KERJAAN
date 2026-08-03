@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { collection, onSnapshot, doc, setDoc } from 'firebase/firestore';
 import { Wrench, Shield, Lock, AlertTriangle, RefreshCw } from 'lucide-react';
 import { db } from './lib/firebase';
-import { NewsArticle, Infographic, DataboksItem, VideoItem, HeaderSettings, SubscriberUser } from './types';
+import { NewsArticle, Infographic, DataboksItem, VideoItem, HeaderSettings, SubscriberUser, AboutAsqiData } from './types';
 import { initialData } from './initialData';
 import { Header } from './components/Header';
 import { Navbar } from './components/Navbar';
@@ -120,6 +120,15 @@ export default function App() {
 
   // Header Settings State
   const [headerSettings, setHeaderSettings] = useState<HeaderSettings | undefined>(undefined);
+
+  // Tentang ASQI Data State
+  const [aboutAsqiData, setAboutAsqiData] = useState<AboutAsqiData>({
+    logoUrl: '/asqi-logo-about.svg',
+    targetUrl: 'https://asqi.or.id/',
+    title: 'TENTANG ASQI',
+    companyName: 'Asosiasi Service Quality Indonesia (ASQI)',
+    description: 'Wadah jaringan profesional, pakar, dan praktisi manajemen mutu layanan terbesar di Indonesia.',
+  });
 
   // Modals & Drawers & Subscriber State
   const [selectedArticle, setSelectedArticle] = useState<NewsArticle | null>(null);
@@ -309,6 +318,7 @@ export default function App() {
     let unsubMaint: (() => void) | null = null;
     let unsubCats: (() => void) | null = null;
     let unsubHeader: (() => void) | null = null;
+    let unsubAbout: (() => void) | null = null;
 
     try {
       unsubArticles = onSnapshot(collection(db, 'articles'), (snapshot) => {
@@ -363,11 +373,24 @@ export default function App() {
           setHeaderSettings(data);
         }
       });
+
+      unsubAbout = onSnapshot(doc(db, 'settings', 'about_asqi'), (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data() as AboutAsqiData;
+          setAboutAsqiData({
+            logoUrl: data.logoUrl || '/asqi-logo-about.svg',
+            targetUrl: data.targetUrl || 'https://asqi.or.id/',
+            title: data.title || 'TENTANG ASQI',
+            companyName: data.companyName || 'Asosiasi Service Quality Indonesia (ASQI)',
+            description: data.description || '',
+          });
+        }
+      });
     } catch (err) {
       console.error('Firestore real-time subscription notice:', err);
     }
 
-    // Also fetch maintenance from REST API
+    // Also fetch maintenance and about-asqi from REST API
     fetch('/api/maintenance')
       .then((r) => r.json())
       .then((res) => {
@@ -376,6 +399,15 @@ export default function App() {
             enabled: !!res.maintenance.enabled,
             message: res.maintenance.message || 'Website ASQI NEWS sedang dalam pemeliharaan sistem rutin.',
           });
+        }
+      })
+      .catch(() => {});
+
+    fetch('/api/about-asqi')
+      .then((r) => r.json())
+      .then((res) => {
+        if (res?.success && res.aboutAsqi) {
+          setAboutAsqiData(res.aboutAsqi);
         }
       })
       .catch(() => {});
@@ -398,6 +430,7 @@ export default function App() {
       if (unsubMaint) unsubMaint();
       if (unsubCats) unsubCats();
       if (unsubHeader) unsubHeader();
+      if (unsubAbout) unsubAbout();
       clearInterval(interval);
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('visibilitychange', handleFocus);
@@ -1091,6 +1124,7 @@ export default function App() {
           <NewsFeedSection
             articles={filteredArticles}
             databoksItems={databoksItems}
+            aboutAsqiData={aboutAsqiData}
             activeCategory={activeCategory}
             searchQuery={searchQuery}
             onArticleClick={(article) => handleOpenArticle(article)}

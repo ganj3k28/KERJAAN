@@ -260,6 +260,49 @@ app.post('/api/maintenance', (req, res) => {
   }
 });
 
+// DEFAULT ABOUT ASQI SETTINGS
+const defaultAboutAsqi = {
+  logoUrl: '/asqi-logo-about.svg',
+  targetUrl: 'https://asqi.or.id/',
+  title: 'TENTANG ASQI',
+  companyName: 'Asosiasi Service Quality Indonesia (ASQI)',
+  description: 'Wadah jaringan profesional, pakar, dan praktisi manajemen mutu layanan terbesar di Indonesia.',
+  updatedAt: new Date().toISOString(),
+};
+
+// GET /api/about-asqi
+app.get('/api/about-asqi', (req, res) => {
+  const data = getStoreData();
+  const current = data.aboutAsqi || defaultAboutAsqi;
+  res.json({ success: true, aboutAsqi: current });
+});
+
+// POST /api/about-asqi
+app.post('/api/about-asqi', (req, res) => {
+  try {
+    const { logoUrl, targetUrl, title, companyName, description } = req.body;
+    const data = getStoreData();
+    const updated = {
+      logoUrl: logoUrl !== undefined ? String(logoUrl).trim() : (data.aboutAsqi?.logoUrl || defaultAboutAsqi.logoUrl),
+      targetUrl: targetUrl !== undefined ? String(targetUrl).trim() : (data.aboutAsqi?.targetUrl || defaultAboutAsqi.targetUrl),
+      title: title !== undefined ? String(title).trim() : (data.aboutAsqi?.title || defaultAboutAsqi.title),
+      companyName: companyName !== undefined ? String(companyName).trim() : (data.aboutAsqi?.companyName || defaultAboutAsqi.companyName),
+      description: description !== undefined ? String(description).trim() : (data.aboutAsqi?.description || defaultAboutAsqi.description),
+      updatedAt: new Date().toISOString(),
+    };
+    data.aboutAsqi = updated;
+    saveStoreData(data);
+
+    // Sync to Firestore in background
+    setDoc(doc(db, 'settings', 'about_asqi'), updated).catch((err) => console.error('Firestore about_asqi save error:', err));
+
+    return res.json({ success: true, aboutAsqi: updated });
+  } catch (err: any) {
+    console.error('Error POST /api/about-asqi:', err);
+    return res.status(500).json({ success: false, message: 'Gagal memperbarui data Tentang ASQI' });
+  }
+});
+
 // POST /api/news
 app.post('/api/news', (req, res) => {
   try {
