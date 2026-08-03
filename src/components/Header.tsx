@@ -1,7 +1,7 @@
 import React from 'react';
-import { Search, User, Menu } from 'lucide-react';
+import { Search, User, Menu, Crown } from 'lucide-react';
 import { Logo } from './Logo';
-import { HeaderSettings, HeaderQuickLink } from '../types';
+import { HeaderSettings, HeaderQuickLink, SubscriberUser } from '../types';
 
 interface HeaderProps {
   searchQuery: string;
@@ -11,6 +11,9 @@ interface HeaderProps {
   onSelectCategory?: (category: string) => void;
   onOpenLoginModal?: () => void;
   onOpenSubscribeModal?: () => void;
+  onOpenLeftDrawer?: () => void;
+  subscriberUser?: SubscriberUser | null;
+  onLogoutSubscriber?: () => void;
 }
 
 const DEFAULT_HEADER_SETTINGS_FALLBACK: HeaderSettings = {
@@ -35,10 +38,20 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectCategory,
   onOpenLoginModal,
   onOpenSubscribeModal,
+  onOpenLeftDrawer,
+  subscriberUser,
+  onLogoutSubscriber,
 }) => {
   const settings = headerSettings || DEFAULT_HEADER_SETTINGS_FALLBACK;
 
   const handleLinkClick = (item: HeaderQuickLink) => {
+    if (item.icon === 'menu' || item.label.toLowerCase() === 'menu') {
+      if (onOpenLeftDrawer) {
+        onOpenLeftDrawer();
+        return;
+      }
+    }
+
     if (item.category && onSelectCategory) {
       onSelectCategory(item.category);
     } else if (item.url) {
@@ -47,7 +60,7 @@ export const Header: React.FC<HeaderProps> = ({
       } else if (onSelectCategory) {
         onSelectCategory(item.url);
       }
-    } else if (item.label.toLowerCase() === 'menu' && onSelectCategory) {
+    } else if (onSelectCategory) {
       onSelectCategory('Beranda');
     }
   };
@@ -224,6 +237,9 @@ export const Header: React.FC<HeaderProps> = ({
               whiteSpace: 'nowrap',
               boxShadow: '0 2px 4px rgba(225, 29, 72, 0.2)',
               transition: 'opacity 0.2s ease',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.opacity = '0.9';
@@ -232,38 +248,79 @@ export const Header: React.FC<HeaderProps> = ({
               e.currentTarget.style.opacity = '1';
             }}
           >
-            {settings.subscribeButtonText || 'Langganan'}
+            <Crown size={15} />
+            <span>{settings.subscribeButtonText || 'Langganan'}</span>
           </button>
 
-          {/* MASUK (LOGIN) BUTTON */}
-          <button
-            type="button"
-            onClick={onOpenLoginModal}
-            style={{
-              backgroundColor: '#ffffff',
-              color: '#0f172a',
-              border: '1px solid #0f172a',
-              padding: '7px 16px',
-              borderRadius: '4px',
-              fontSize: '13px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              whiteSpace: 'nowrap',
-              transition: 'background-color 0.2s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#f1f5f9';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#ffffff';
-            }}
-          >
-            <User size={16} />
-            <span>{settings.loginButtonText || 'Masuk'}</span>
-          </button>
+          {/* MASUK (LOGIN) / SUBSCRIBER STATE BUTTON */}
+          {subscriberUser ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button
+                type="button"
+                onClick={onOpenLeftDrawer}
+                title="Lihat Status Langganan &amp; Menu"
+                style={{
+                  backgroundColor: '#0f172a',
+                  color: '#ffffff',
+                  border: '1px solid #334155',
+                  padding: '7px 14px',
+                  borderRadius: '4px',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <Crown size={15} style={{ color: '#fbbf24' }} />
+                <span>{subscriberUser.name}</span>
+                <span
+                  style={{
+                    backgroundColor: '#16a34a',
+                    color: '#ffffff',
+                    fontSize: '10px',
+                    fontWeight: 800,
+                    padding: '2px 5px',
+                    borderRadius: '3px',
+                    lineHeight: 1,
+                  }}
+                >
+                  AKSES KHUSUS
+                </span>
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={onOpenLoginModal}
+              style={{
+                backgroundColor: '#ffffff',
+                color: '#0f172a',
+                border: '1px solid #0f172a',
+                padding: '7px 16px',
+                borderRadius: '4px',
+                fontSize: '13px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                whiteSpace: 'nowrap',
+                transition: 'background-color 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#f1f5f9';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#ffffff';
+              }}
+            >
+              <User size={16} />
+              <span>{settings.loginButtonText || 'Masuk'}</span>
+            </button>
+          )}
         </div>
       </div>
     </header>

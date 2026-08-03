@@ -82,8 +82,27 @@ export const NewsFeedSection: React.FC<NewsFeedSectionProps> = ({
                           e.preventDefault();
                           onArticleClick(article);
                         }}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}
                       >
-                        {article.title}
+                        {article.isPremium && (
+                          <span
+                            style={{
+                              backgroundColor: '#e11d48',
+                              color: '#ffffff',
+                              fontSize: '10px',
+                              fontWeight: 800,
+                              padding: '2px 6px',
+                              borderRadius: '3px',
+                              lineHeight: 1,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '3px',
+                            }}
+                          >
+                            🔒 AKSES KHUSUS
+                          </span>
+                        )}
+                        <span>{article.title}</span>
                       </a>
                       <div className="news-meta">
                         <span style={{ fontWeight: 600, color: '#0369a1' }}>{article.category}</span> • {article.publishedAt.toUpperCase()} • <span style={{ color: '#0284c7', fontWeight: 600 }}>👁️ {(article.views || 0).toLocaleString('id-ID')} dibaca</span>

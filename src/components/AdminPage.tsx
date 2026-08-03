@@ -138,6 +138,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   const [galleryImages, setGalleryImages] = useState<{ url: string; caption?: string }[]>([]);
   const [isFeatured, setIsFeatured] = useState(false);
   const [isPopular, setIsPopular] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
   const [tags, setTags] = useState('');
   const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
 
@@ -380,6 +381,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
       galleryImages: Array.isArray(galleryImages) ? galleryImages : [],
       isFeatured: !!isFeatured,
       isPopular: !!isPopular,
+      isPremium: !!isPremium,
       tags: tags ? tags.split(',').map((t) => t.trim()) : [category],
     };
 
@@ -447,6 +449,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     setGalleryImages(article.galleryImages || []);
     setIsFeatured(Boolean(article.isFeatured));
     setIsPopular(Boolean(article.isPopular));
+    setIsPremium(Boolean(article.isPremium));
     setTags(article.tags ? article.tags.join(', ') : '');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -480,6 +483,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     setGalleryImages([]);
     setIsFeatured(false);
     setIsPopular(false);
+    setIsPremium(false);
     setTags('');
   };
 
@@ -1308,7 +1312,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                   />
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginTop: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginTop: '20px', flexWrap: 'wrap' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px' }}>
                     <input type="checkbox" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} />
                     Tampilkan di Carousel Slider Headline Utama
@@ -1317,6 +1321,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                   <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px' }}>
                     <input type="checkbox" checked={isPopular} onChange={(e) => setIsPopular(e.target.checked)} />
                     Tandai Berita Terpopuler
+                  </label>
+
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', backgroundColor: '#881337', padding: '6px 12px', borderRadius: '6px', color: '#ffffff' }}>
+                    <input type="checkbox" checked={isPremium} onChange={(e) => setIsPremium(e.target.checked)} />
+                    🔒 Berita Akses Khusus (Berbayar Akses Khusus)
                   </label>
                 </div>
 

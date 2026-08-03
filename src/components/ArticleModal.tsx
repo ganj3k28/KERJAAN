@@ -1,14 +1,24 @@
 import React, { useEffect, useState } from 'react';
-import { NewsArticle } from '../types';
-import { X, Eye, Calendar, User, Share2, Tag, Bookmark } from 'lucide-react';
+import { NewsArticle, SubscriberUser } from '../types';
+import { X, Eye, Calendar, User, Share2, Tag, Bookmark, Lock, Crown, ShieldCheck } from 'lucide-react';
 
 interface ArticleModalProps {
   article: NewsArticle | null;
   onClose: () => void;
   onSelectRelated: (article: NewsArticle) => void;
+  subscriberUser?: SubscriberUser | null;
+  onOpenSubscribeModal?: () => void;
+  onOpenLoginModal?: () => void;
 }
 
-export const ArticleModal: React.FC<ArticleModalProps> = ({ article, onClose, onSelectRelated }) => {
+export const ArticleModal: React.FC<ArticleModalProps> = ({
+  article,
+  onClose,
+  onSelectRelated,
+  subscriberUser,
+  onOpenSubscribeModal,
+  onOpenLoginModal,
+}) => {
   const [relatedArticles, setRelatedArticles] = useState<NewsArticle[]>([]);
   const [isSaved, setIsSaved] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -98,9 +108,42 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({ article, onClose, on
             >
               {article.category}
             </span>
-            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 500 }}>
-              ASQI NEWS Exclusives
-            </span>
+
+            {article.isPremium && (
+              <span
+                style={{
+                  backgroundColor: '#e11d48',
+                  color: '#ffffff',
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  padding: '4px 10px',
+                  borderRadius: '4px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                <Crown size={12} /> AKSES KHUSUS BERBAYAR
+              </span>
+            )}
+
+            {subscriberUser && article.isPremium && (
+              <span
+                style={{
+                  backgroundColor: '#16a34a',
+                  color: '#ffffff',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                <ShieldCheck size={12} /> TERBUKA
+              </span>
+            )}
           </div>
           <button
             onClick={onClose}
@@ -216,10 +259,104 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({ article, onClose, on
             </div>
           )}
 
-          {/* Article Body Content with Inline Middle Image */}
+          {/* Article Body Content with Inline Middle Image & Paywall Check */}
           {(() => {
             const paragraphs = article.content.split('\n').filter((p) => p.trim() !== '');
             if (paragraphs.length === 0) return null;
+
+            // Paywall logic: if article is premium and user is NOT a subscriber, show only lead + 1st paragraph + Paywall
+            const isPaywalled = article.isPremium && !subscriberUser;
+
+            if (isPaywalled) {
+              return (
+                <div style={{ fontSize: '15px', color: '#1e293b', lineHeight: 1.8, marginBottom: '28px' }}>
+                  <p style={{ marginBottom: '16px' }}>{paragraphs[0]}</p>
+
+                  {/* Paywall Container */}
+                  <div
+                    style={{
+                      marginTop: '24px',
+                      padding: '32px 24px',
+                      backgroundColor: '#0f172a',
+                      borderRadius: '12px',
+                      color: '#ffffff',
+                      textAlign: 'center',
+                      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)',
+                      border: '2px solid #e11d48',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '52px',
+                        height: '52px',
+                        backgroundColor: '#e11d48',
+                        borderRadius: '50%',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginBottom: '14px',
+                      }}
+                    >
+                      <Lock size={26} color="#ffffff" />
+                    </div>
+
+                    <h3 style={{ fontSize: '20px', fontWeight: 800, margin: '0 0 8px 0', color: '#ffffff' }}>
+                      Artikel Ini Khusus Pelanggan Berbayar
+                    </h3>
+                    <p style={{ fontSize: '13px', color: '#cbd5e1', maxWidth: '480px', margin: '0 auto 20px auto', lineHeight: 1.5 }}>
+                      Anda sedang mengakses berita berbayar eksklusif. Untuk membaca ulasan lengkap, hasil wawancara mendalam, dan grafik analisis data, silakan masuk atau berlangganan paket khusus.
+                    </p>
+
+                    <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={() => {
+                          onClose();
+                          if (onOpenSubscribeModal) onOpenSubscribeModal();
+                        }}
+                        style={{
+                          backgroundColor: '#e11d48',
+                          color: '#ffffff',
+                          border: 'none',
+                          padding: '12px 22px',
+                          borderRadius: '6px',
+                          fontWeight: 700,
+                          fontSize: '13px',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          boxShadow: '0 4px 6px rgba(225, 29, 72, 0.3)',
+                        }}
+                      >
+                        <Crown size={16} /> Berlangganan Akses Khusus
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          onClose();
+                          if (onOpenLoginModal) onOpenLoginModal();
+                        }}
+                        style={{
+                          backgroundColor: '#ffffff',
+                          color: '#0f172a',
+                          border: 'none',
+                          padding: '12px 22px',
+                          borderRadius: '6px',
+                          fontWeight: 700,
+                          fontSize: '13px',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                        }}
+                      >
+                        <User size={16} /> Masuk Akun Langganan
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
 
             const middleIndex = article.middleImage ? Math.max(1, Math.floor(paragraphs.length / 2)) : paragraphs.length;
             const firstPart = paragraphs.slice(0, middleIndex);

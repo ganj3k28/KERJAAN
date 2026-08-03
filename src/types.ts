@@ -14,6 +14,7 @@ export interface NewsArticle {
   galleryImages?: { url: string; caption?: string }[]; // Galeri Foto Tambahan
   isFeatured?: boolean;
   isPopular?: boolean;
+  isPremium?: boolean; // Berita Berbayar Akses Khusus
   tags?: string[];
 }
 
@@ -73,6 +74,16 @@ export interface AdminUser {
   name: string;
   role: AdminRole;
   createdAt?: string;
+}
+
+export interface SubscriberUser {
+  id: string;
+  email: string;
+  name: string;
+  plan: 'bulanan' | 'tahunan' | 'vip';
+  subscribedAt: string;
+  expiresAt: string;
+  isSubscribed: boolean;
 }
 
 export interface InitialData {

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { collection, onSnapshot, doc, setDoc } from 'firebase/firestore';
 import { Wrench, Shield, Lock, AlertTriangle, RefreshCw } from 'lucide-react';
 import { db } from './lib/firebase';
-import { NewsArticle, Infographic, DataboksItem, VideoItem, HeaderSettings } from './types';
+import { NewsArticle, Infographic, DataboksItem, VideoItem, HeaderSettings, SubscriberUser } from './types';
 import { initialData } from './initialData';
 import { Header } from './components/Header';
 import { Navbar } from './components/Navbar';
@@ -16,7 +16,13 @@ import { ArticleModal } from './components/ArticleModal';
 import { AdminPage } from './components/AdminPage';
 import { SubscribeModal } from './components/SubscribeModal';
 import { VideoModal } from './components/VideoModal';
+import { LeftSidebarDrawer } from './components/LeftSidebarDrawer';
+import { SubscriberLoginModal } from './components/SubscriberLoginModal';
 import { Logo } from './components/Logo';
+import { AboutPage } from './components/pages/AboutPage';
+import { CyberMediaGuidelinesPage } from './components/pages/CyberMediaGuidelinesPage';
+import { CopyrightPage } from './components/pages/CopyrightPage';
+import { DataServicesPage } from './components/pages/DataServicesPage';
 
 export default function App() {
   const [allArticles, setAllArticles] = useState<NewsArticle[]>(() => {
@@ -114,11 +120,22 @@ export default function App() {
   // Header Settings State
   const [headerSettings, setHeaderSettings] = useState<HeaderSettings | undefined>(undefined);
 
-  // Modals
+  // Modals & Drawers & Subscriber State
   const [selectedArticle, setSelectedArticle] = useState<NewsArticle | null>(null);
   const [selectedInfographic, setSelectedInfographic] = useState<Infographic | null>(null);
   const [selectedVideo, setSelectedVideo] = useState<VideoItem | null>(null);
   const [showSubscribeModal, setShowSubscribeModal] = useState<boolean>(false);
+  const [showSubscriberLoginModal, setShowSubscriberLoginModal] = useState<boolean>(false);
+  const [isLeftDrawerOpen, setIsLeftDrawerOpen] = useState<boolean>(false);
+
+  const [subscriberUser, setSubscriberUser] = useState<SubscriberUser | null>(() => {
+    try {
+      const saved = localStorage.getItem('asqi_subscriber_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
 
   // Maintenance Mode State
   const [maintenance, setMaintenance] = useState<{ enabled: boolean; message: string }>({
@@ -408,6 +425,10 @@ export default function App() {
 
   const normalizedPath = currentPath.toLowerCase().trim();
   const isAdminRoute = normalizedPath.includes('/admin') || normalizedPath === 'admin';
+  const isAboutRoute = normalizedPath.includes('/tentang-asqi') || normalizedPath.includes('tentang-asqi');
+  const isPedomanRoute = normalizedPath.includes('/pedoman-media-siber') || normalizedPath.includes('pedoman');
+  const isCopyrightRoute = normalizedPath.includes('/hak-cipta') || normalizedPath.includes('hak-cipta');
+  const isDataServicesRoute = normalizedPath.includes('/layanan-informasi-data') || normalizedPath.includes('layanan-informasi-data');
 
   // Dedicated Route for /admin
   if (isAdminRoute) {
@@ -421,6 +442,217 @@ export default function App() {
         onRefreshData={refreshLocalData}
         onNavigateHome={() => navigateTo('/')}
       />
+    );
+  }
+
+  // Dedicated Routes for Redaksi & Layanan Pages
+  if (isAboutRoute || isPedomanRoute || isCopyrightRoute || isDataServicesRoute) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <Header
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          onSearchSubmit={handleSearchSubmit}
+          headerSettings={headerSettings}
+          subscriberUser={subscriberUser}
+          onOpenLeftDrawer={() => setIsLeftDrawerOpen(true)}
+          onSelectCategory={(cat) => {
+            setActiveCategory(cat);
+            navigateTo('/');
+          }}
+          onOpenLoginModal={() => setShowSubscriberLoginModal(true)}
+          onOpenSubscribeModal={() => setShowSubscribeModal(true)}
+        />
+        <Navbar
+          activeCategory={activeCategory}
+          categories={categories}
+          onSelectCategory={(cat) => {
+            setActiveCategory(cat);
+            navigateTo('/');
+          }}
+        />
+
+        <div style={{ flex: 1 }}>
+          {isAboutRoute && <AboutPage onBackToHome={() => navigateTo('/')} onNavigateToPage={(p) => navigateTo(p)} />}
+          {isPedomanRoute && <CyberMediaGuidelinesPage onBackToHome={() => navigateTo('/')} onNavigateToPage={(p) => navigateTo(p)} />}
+          {isCopyrightRoute && <CopyrightPage onBackToHome={() => navigateTo('/')} onNavigateToPage={(p) => navigateTo(p)} />}
+          {isDataServicesRoute && <DataServicesPage onBackToHome={() => navigateTo('/')} onNavigateToPage={(p) => navigateTo(p)} />}
+        </div>
+
+        {/* Footer */}
+        <footer
+          style={{
+            backgroundColor: '#0b2545',
+            color: '#94a3b8',
+            padding: '40px 16px 20px',
+            borderTop: '4px solid #0056b3',
+          }}
+        >
+          <div
+            style={{
+              maxWidth: '1200px',
+              margin: '0 auto',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: '32px',
+              paddingBottom: '30px',
+              borderBottom: '1px solid rgba(255,255,255,0.1)',
+            }}
+          >
+            <div>
+              <div style={{ marginBottom: '12px', cursor: 'pointer' }} onClick={() => navigateTo('/')}>
+                <Logo height={38} />
+              </div>
+              <p style={{ fontSize: '13px', lineHeight: 1.6 }}>
+                Menyuarakan Pelayanan Prima Media Pers Pelayanan Publik Indonesia
+              </p>
+            </div>
+
+            <div>
+              <h4 style={{ color: '#ffffff', fontSize: '14px', fontWeight: 700, marginBottom: '12px' }}>
+                KATEGORI UTAMA
+              </h4>
+              <ul style={{ listStyle: 'none', fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <li><a href="/" onClick={(e) => { e.preventDefault(); setActiveCategory('Beranda'); navigateTo('/'); }} style={{ color: '#94a3b8', textDecoration: 'none' }}>Beranda Utama</a></li>
+                <li><a href="/" onClick={(e) => { e.preventDefault(); setActiveCategory('Pelayanan Publik'); navigateTo('/'); }} style={{ color: '#94a3b8', textDecoration: 'none' }}>Pelayanan Publik</a></li>
+                <li><a href="/" onClick={(e) => { e.preventDefault(); setActiveCategory('BUMN'); navigateTo('/'); }} style={{ color: '#94a3b8', textDecoration: 'none' }}>BUMN &amp; BUMD</a></li>
+                <li><a href="/" onClick={(e) => { e.preventDefault(); setActiveCategory('PROFIL TOKOH PELAYANAN'); navigateTo('/'); }} style={{ color: '#94a3b8', textDecoration: 'none' }}>Profil Tokoh Pelayanan</a></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 style={{ color: '#ffffff', fontSize: '14px', fontWeight: 700, marginBottom: '12px' }}>
+                REDAKSI &amp; LAYANAN
+              </h4>
+              <ul style={{ listStyle: 'none', fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '8px', color: '#94a3b8' }}>
+                <li>
+                  <a
+                    href="/tentang-asqi"
+                    onClick={(e) => { e.preventDefault(); navigateTo('/tentang-asqi'); }}
+                    style={{ color: '#cbd5e1', textDecoration: 'none', cursor: 'pointer' }}
+                  >
+                    Tentang ASQI NEWS
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/pedoman-media-siber"
+                    onClick={(e) => { e.preventDefault(); navigateTo('/pedoman-media-siber'); }}
+                    style={{ color: '#cbd5e1', textDecoration: 'none', cursor: 'pointer' }}
+                  >
+                    Pedoman Media Siber
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/hak-cipta"
+                    onClick={(e) => { e.preventDefault(); navigateTo('/hak-cipta'); }}
+                    style={{ color: '#cbd5e1', textDecoration: 'none', cursor: 'pointer' }}
+                  >
+                    Siber &amp; Hak Cipta
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/layanan-informasi-data"
+                    onClick={(e) => { e.preventDefault(); navigateTo('/layanan-informasi-data'); }}
+                    style={{ color: '#cbd5e1', textDecoration: 'none', cursor: 'pointer' }}
+                  >
+                    Layanan Informasi Data
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div
+            style={{
+              maxWidth: '1200px',
+              margin: '20px auto 0',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '12px',
+              fontSize: '12px',
+            }}
+          >
+            <div>© {new Date().getFullYear()} ASQI NEWS.com. Hak Cipta Dilindungi Undang-Undang.</div>
+            <div style={{ display: 'flex', gap: '16px' }}>
+              <a href="/hak-cipta" onClick={(e) => { e.preventDefault(); navigateTo('/hak-cipta'); }} style={{ color: '#cbd5e1', textDecoration: 'none' }}>Syarat &amp; Ketentuan</a>
+              <a href="/tentang-asqi" onClick={(e) => { e.preventDefault(); navigateTo('/tentang-asqi'); }} style={{ color: '#cbd5e1', textDecoration: 'none' }}>Kebijakan Privasi</a>
+              <a href="/pedoman-media-siber" onClick={(e) => { e.preventDefault(); navigateTo('/pedoman-media-siber'); }} style={{ color: '#cbd5e1', textDecoration: 'none' }}>Pedoman Siber</a>
+            </div>
+          </div>
+        </footer>
+
+        {/* LEFT SIDEBAR DRAWER */}
+        <LeftSidebarDrawer
+          isOpen={isLeftDrawerOpen}
+          onClose={() => setIsLeftDrawerOpen(false)}
+          categories={categories}
+          activeCategory={activeCategory}
+          onSelectCategory={(cat) => {
+            setActiveCategory(cat);
+            setIsLeftDrawerOpen(false);
+            navigateTo('/');
+          }}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          onSearchSubmit={(e) => {
+            handleSearchSubmit(e);
+            setIsLeftDrawerOpen(false);
+            navigateTo('/');
+          }}
+          subscriberUser={subscriberUser}
+          onOpenSubscribeModal={() => {
+            setIsLeftDrawerOpen(false);
+            setShowSubscribeModal(true);
+          }}
+          onOpenLoginModal={() => {
+            setIsLeftDrawerOpen(false);
+            setShowSubscriberLoginModal(true);
+          }}
+          onLogoutSubscriber={() => {
+            setSubscriberUser(null);
+            localStorage.removeItem('asqi_subscriber_user');
+          }}
+          onOpenAdminPanel={() => {
+            setIsLeftDrawerOpen(false);
+            navigateTo('/admin');
+          }}
+          onNavigateToPage={(path) => {
+            setIsLeftDrawerOpen(false);
+            navigateTo(path);
+          }}
+        />
+
+        {/* SUBSCRIBER LOGIN MODAL */}
+        <SubscriberLoginModal
+          isOpen={showSubscriberLoginModal}
+          onClose={() => setShowSubscriberLoginModal(false)}
+          onSubscriberLoginSuccess={(user) => {
+            setSubscriberUser(user);
+            localStorage.setItem('asqi_subscriber_user', JSON.stringify(user));
+            setShowSubscriberLoginModal(false);
+          }}
+          onOpenSubscribeModal={() => {
+            setShowSubscriberLoginModal(false);
+            setShowSubscribeModal(true);
+          }}
+        />
+
+        {showSubscribeModal && (
+          <SubscribeModal
+            onClose={() => setShowSubscribeModal(false)}
+            onSubscriberActivated={(user) => {
+              setSubscriberUser(user);
+              localStorage.setItem('asqi_subscriber_user', JSON.stringify(user));
+              setShowSubscribeModal(false);
+            }}
+          />
+        )}
+      </div>
     );
   }
 
@@ -558,11 +790,13 @@ export default function App() {
         setSearchQuery={setSearchQuery}
         onSearchSubmit={handleSearchSubmit}
         headerSettings={headerSettings}
+        subscriberUser={subscriberUser}
+        onOpenLeftDrawer={() => setIsLeftDrawerOpen(true)}
         onSelectCategory={(cat) => {
           setActiveCategory(cat);
           setSearchQuery('');
         }}
-        onOpenLoginModal={() => navigateTo('/admin')}
+        onOpenLoginModal={() => setShowSubscriberLoginModal(true)}
         onOpenSubscribeModal={() => setShowSubscribeModal(true)}
       />
 
@@ -659,7 +893,7 @@ export default function App() {
               <Logo height={38} />
             </div>
             <p style={{ fontSize: '13px', lineHeight: 1.6 }}>
-              Portal berita ekonomi, bisnis, investasi, dan teknologi terkemuka dengan analisis data mendalam serta liputan independen berstandar jurnalisme profesional.
+              Menyuarakan Pelayanan Prima Media Pers Pelayanan Publik Indonesia
             </p>
           </div>
 
@@ -680,10 +914,42 @@ export default function App() {
               REDAKSI &amp; LAYANAN
             </h4>
             <ul style={{ listStyle: 'none', fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '8px', color: '#94a3b8' }}>
-              <li>Tentang ASQI NEWS</li>
-              <li>Pedoman Media Siber</li>
-              <li>Siber &amp; Hak Cipta</li>
-              <li>Layanan Informasi Data</li>
+              <li>
+                <a
+                  href="/tentang-asqi"
+                  onClick={(e) => { e.preventDefault(); navigateTo('/tentang-asqi'); }}
+                  style={{ color: '#cbd5e1', textDecoration: 'none', cursor: 'pointer' }}
+                >
+                  Tentang ASQI NEWS
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/pedoman-media-siber"
+                  onClick={(e) => { e.preventDefault(); navigateTo('/pedoman-media-siber'); }}
+                  style={{ color: '#cbd5e1', textDecoration: 'none', cursor: 'pointer' }}
+                >
+                  Pedoman Media Siber
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/hak-cipta"
+                  onClick={(e) => { e.preventDefault(); navigateTo('/hak-cipta'); }}
+                  style={{ color: '#cbd5e1', textDecoration: 'none', cursor: 'pointer' }}
+                >
+                  Siber &amp; Hak Cipta
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/layanan-informasi-data"
+                  onClick={(e) => { e.preventDefault(); navigateTo('/layanan-informasi-data'); }}
+                  style={{ color: '#cbd5e1', textDecoration: 'none', cursor: 'pointer' }}
+                >
+                  Layanan Informasi Data
+                </a>
+              </li>
             </ul>
           </div>
         </div>
@@ -702,12 +968,67 @@ export default function App() {
         >
           <div>© {new Date().getFullYear()} ASQI NEWS.com. Hak Cipta Dilindungi Undang-Undang.</div>
           <div style={{ display: 'flex', gap: '16px' }}>
-            <a href="#terms">Syarat &amp; Ketentuan</a>
-            <a href="#privacy">Kebijakan Privasi</a>
-            <a href="#pedoman">Pedoman Siber</a>
+            <a href="/hak-cipta" onClick={(e) => { e.preventDefault(); navigateTo('/hak-cipta'); }} style={{ color: '#cbd5e1', textDecoration: 'none' }}>Syarat &amp; Ketentuan</a>
+            <a href="/tentang-asqi" onClick={(e) => { e.preventDefault(); navigateTo('/tentang-asqi'); }} style={{ color: '#cbd5e1', textDecoration: 'none' }}>Kebijakan Privasi</a>
+            <a href="/pedoman-media-siber" onClick={(e) => { e.preventDefault(); navigateTo('/pedoman-media-siber'); }} style={{ color: '#cbd5e1', textDecoration: 'none' }}>Pedoman Siber</a>
           </div>
         </div>
       </footer>
+
+      {/* LEFT SIDEBAR DRAWER (Triggers from 3 lines / hamburger icon) */}
+      <LeftSidebarDrawer
+        isOpen={isLeftDrawerOpen}
+        onClose={() => setIsLeftDrawerOpen(false)}
+        categories={categories}
+        activeCategory={activeCategory}
+        onSelectCategory={(cat) => {
+          setActiveCategory(cat);
+          setIsLeftDrawerOpen(false);
+          setSearchQuery('');
+        }}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        onSearchSubmit={(e) => {
+          handleSearchSubmit(e);
+          setIsLeftDrawerOpen(false);
+        }}
+        subscriberUser={subscriberUser}
+        onOpenSubscribeModal={() => {
+          setIsLeftDrawerOpen(false);
+          setShowSubscribeModal(true);
+        }}
+        onOpenLoginModal={() => {
+          setIsLeftDrawerOpen(false);
+          setShowSubscriberLoginModal(true);
+        }}
+        onLogoutSubscriber={() => {
+          setSubscriberUser(null);
+          localStorage.removeItem('asqi_subscriber_user');
+        }}
+        onOpenAdminPanel={() => {
+          setIsLeftDrawerOpen(false);
+          navigateTo('/admin');
+        }}
+        onNavigateToPage={(path) => {
+          setIsLeftDrawerOpen(false);
+          navigateTo(path);
+        }}
+      />
+
+      {/* SUBSCRIBER LOGIN MODAL */}
+      <SubscriberLoginModal
+        isOpen={showSubscriberLoginModal}
+        onClose={() => setShowSubscriberLoginModal(false)}
+        onSubscriberLoginSuccess={(user) => {
+          setSubscriberUser(user);
+          localStorage.setItem('asqi_subscriber_user', JSON.stringify(user));
+          setShowSubscriberLoginModal(false);
+        }}
+        onOpenSubscribeModal={() => {
+          setShowSubscriberLoginModal(false);
+          setShowSubscribeModal(true);
+        }}
+      />
 
       {/* MODALS */}
       {selectedArticle && (
@@ -715,6 +1036,9 @@ export default function App() {
           article={selectedArticle}
           onClose={() => setSelectedArticle(null)}
           onSelectRelated={(art) => handleOpenArticle(art)}
+          subscriberUser={subscriberUser}
+          onOpenSubscribeModal={() => setShowSubscribeModal(true)}
+          onOpenLoginModal={() => setShowSubscriberLoginModal(true)}
         />
       )}
 
@@ -760,7 +1084,14 @@ export default function App() {
       )}
 
       {showSubscribeModal && (
-        <SubscribeModal onClose={() => setShowSubscribeModal(false)} />
+        <SubscribeModal
+          onClose={() => setShowSubscribeModal(false)}
+          onSubscriberActivated={(user) => {
+            setSubscriberUser(user);
+            localStorage.setItem('asqi_subscriber_user', JSON.stringify(user));
+            setShowSubscribeModal(false);
+          }}
+        />
       )}
 
       {selectedVideo && (

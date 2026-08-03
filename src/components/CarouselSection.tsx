@@ -47,19 +47,34 @@ export const CarouselSection: React.FC<CarouselSectionProps> = ({ slides, onArti
           />
         </div>
         <div className="carousel-overlay">
-          <span style={{
-            background: '#0284c7',
-            color: '#fff',
-            fontSize: '11px',
-            fontWeight: 700,
-            padding: '3px 8px',
-            borderRadius: '4px',
-            marginBottom: '8px',
-            display: 'inline-block',
-            textTransform: 'uppercase'
-          }}>
-            {currentSlide.category}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <span style={{
+              background: '#0284c7',
+              color: '#fff',
+              fontSize: '11px',
+              fontWeight: 700,
+              padding: '3px 8px',
+              borderRadius: '4px',
+              display: 'inline-block',
+              textTransform: 'uppercase'
+            }}>
+              {currentSlide.category}
+            </span>
+
+            {currentSlide.isPremium && (
+              <span style={{
+                background: '#e11d48',
+                color: '#fff',
+                fontSize: '11px',
+                fontWeight: 800,
+                padding: '3px 8px',
+                borderRadius: '4px',
+                display: 'inline-block'
+              }}>
+                🔒 AKSES KHUSUS
+              </span>
+            )}
+          </div>
           <h2 id="carouselTitle">{currentSlide.title}</h2>
         </div>
       </div>

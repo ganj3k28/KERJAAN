@@ -158,10 +158,14 @@ app.get('/api/news', async (req, res) => {
 
   const { category, search } = req.query;
 
-  if (category && typeof category === 'string' && category !== 'Telaah') {
-    articles = articles.filter(
-      (art) => art.category.toLowerCase() === category.toLowerCase()
-    );
+  if (category && typeof category === 'string') {
+    if (category.toLowerCase() === 'akses khusus') {
+      articles = articles.filter((art) => art.isPremium === true);
+    } else if (category !== 'Telaah') {
+      articles = articles.filter(
+        (art) => art.category.toLowerCase() === category.toLowerCase()
+      );
+    }
   }
 
   if (search && typeof search === 'string') {
@@ -294,6 +298,7 @@ app.post('/api/news', (req, res) => {
         : [],
       isFeatured: !!isFeatured,
       isPopular: !!isPopular,
+      isPremium: !!req.body.isPremium,
       tags: Array.isArray(tags) ? tags : [category],
     };
 
@@ -359,6 +364,7 @@ app.put('/api/news/:id', (req, res) => {
         : existing.galleryImages,
       isFeatured: isFeatured !== undefined ? !!isFeatured : existing.isFeatured,
       isPopular: isPopular !== undefined ? !!isPopular : existing.isPopular,
+      isPremium: req.body.isPremium !== undefined ? !!req.body.isPremium : existing.isPremium,
       tags: tags !== undefined ? (Array.isArray(tags) ? tags : [category]) : existing.tags,
     };
 
