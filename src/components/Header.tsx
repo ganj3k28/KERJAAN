@@ -25,7 +25,7 @@ const DEFAULT_HEADER_SETTINGS_FALLBACK: HeaderSettings = {
     { id: 'ql-4', label: 'ASQI Plus', category: 'ASQI', icon: 'badge', isHighlighted: true },
   ],
   subscribeButtonText: 'Langganan',
-  subscribeButtonBgColor: '#e11d48',
+  subscribeButtonBgColor: '#001e58',
   loginButtonText: 'Masuk',
   showSearchBox: true,
 };
@@ -226,7 +226,7 @@ export const Header: React.FC<HeaderProps> = ({
             type="button"
             onClick={onOpenSubscribeModal}
             style={{
-              backgroundColor: settings.subscribeButtonBgColor || '#e11d48',
+              backgroundColor: settings.subscribeButtonBgColor || '#001e58',
               color: '#ffffff',
               border: 'none',
               padding: '8px 18px',
@@ -235,7 +235,7 @@ export const Header: React.FC<HeaderProps> = ({
               fontWeight: 700,
               cursor: 'pointer',
               whiteSpace: 'nowrap',
-              boxShadow: '0 2px 4px rgba(225, 29, 72, 0.2)',
+              boxShadow: '0 2px 4px rgba(0, 30, 88, 0.2)',
               transition: 'opacity 0.2s ease',
               display: 'inline-flex',
               alignItems: 'center',

@@ -140,7 +140,7 @@ export const SubscribeModal: React.FC<SubscribeModalProps> = ({
               width: '52px',
               height: '52px',
               backgroundColor: '#fff1f2',
-              color: '#e11d48',
+              color: '#E10600',
               borderRadius: '50%',
               display: 'inline-flex',
               alignItems: 'center',
@@ -207,7 +207,7 @@ export const SubscribeModal: React.FC<SubscribeModalProps> = ({
                 <div
                   onClick={() => setSelectedPlan('bulanan')}
                   style={{
-                    border: selectedPlan === 'bulanan' ? '2px solid #e11d48' : '1px solid #cbd5e1',
+                    border: selectedPlan === 'bulanan' ? '2px solid #E10600' : '1px solid #cbd5e1',
                     backgroundColor: selectedPlan === 'bulanan' ? '#fff1f2' : '#f8fafc',
                     borderRadius: '8px',
                     padding: '14px',
@@ -224,7 +224,7 @@ export const SubscribeModal: React.FC<SubscribeModalProps> = ({
                 <div
                   onClick={() => setSelectedPlan('tahunan')}
                   style={{
-                    border: selectedPlan === 'tahunan' ? '2px solid #e11d48' : '1px solid #cbd5e1',
+                    border: selectedPlan === 'tahunan' ? '2px solid #E10600' : '1px solid #cbd5e1',
                     backgroundColor: selectedPlan === 'tahunan' ? '#fff1f2' : '#f8fafc',
                     borderRadius: '8px',
                     padding: '14px',
@@ -237,7 +237,7 @@ export const SubscribeModal: React.FC<SubscribeModalProps> = ({
                       position: 'absolute',
                       top: '-10px',
                       right: '10px',
-                      backgroundColor: '#e11d48',
+                      backgroundColor: '#E10600',
                       color: '#ffffff',
                       fontSize: '10px',
                       fontWeight: 800,
@@ -314,7 +314,7 @@ export const SubscribeModal: React.FC<SubscribeModalProps> = ({
               type="submit"
               disabled={loading}
               style={{
-                backgroundColor: '#e11d48',
+                backgroundColor: '#001e58',
                 color: '#ffffff',
                 border: 'none',
                 borderRadius: '6px',
@@ -326,7 +326,7 @@ export const SubscribeModal: React.FC<SubscribeModalProps> = ({
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
-                boxShadow: '0 4px 6px -1px rgba(225, 29, 72, 0.3)',
+                boxShadow: '0 4px 6px -1px rgba(0, 30, 88, 0.3)',
               }}
             >
               <Zap size={16} /> {loading ? 'Aktivasi Berlangganan...' : 'Aktivasi Langganan & Buka Berita Khusus'}
@@ -344,7 +344,7 @@ export const SubscribeModal: React.FC<SubscribeModalProps> = ({
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: '#e11d48',
+                  color: '#E10600',
                   fontWeight: 700,
                   cursor: 'pointer',
                   padding: 0,

@@ -203,7 +203,7 @@ export const LeftSidebarDrawer: React.FC<LeftSidebarDrawerProps> = ({
             ) : (
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                  <Crown size={18} style={{ color: '#e11d48' }} />
+                  <Crown size={18} style={{ color: '#E10600' }} />
                   <span style={{ fontSize: '13px', fontWeight: 800, color: '#be123c' }}>
                     Berita Berbayar Akses Khusus
                   </span>
@@ -219,7 +219,7 @@ export const LeftSidebarDrawer: React.FC<LeftSidebarDrawerProps> = ({
                     }}
                     style={{
                       flex: 1,
-                      backgroundColor: '#e11d48',
+                      backgroundColor: '#E10600',
                       color: '#ffffff',
                       border: 'none',
                       padding: '8px',
@@ -297,11 +297,11 @@ export const LeftSidebarDrawer: React.FC<LeftSidebarDrawerProps> = ({
                 }}
               >
                 <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Crown size={16} style={{ color: '#e11d48' }} /> Berita Akses Khusus
+                  <Crown size={16} style={{ color: '#E10600' }} /> Berita Akses Khusus
                 </span>
                 <span
                   style={{
-                    backgroundColor: '#e11d48',
+                    backgroundColor: '#E10600',
                     color: '#ffffff',
                     fontSize: '10px',
                     fontWeight: 800,
@@ -329,8 +329,8 @@ export const LeftSidebarDrawer: React.FC<LeftSidebarDrawerProps> = ({
                       justifyContent: 'space-between',
                       padding: '10px 12px',
                       borderRadius: '6px',
-                      backgroundColor: isActive ? '#eff6ff' : 'transparent',
-                      color: isActive ? '#0284c7' : '#334155',
+                      backgroundColor: isActive ? '#f0f4f8' : 'transparent',
+                      color: isActive ? '#08204D' : '#334155',
                       fontWeight: isActive ? 700 : 500,
                       fontSize: '13px',
                       border: 'none',
@@ -346,7 +346,7 @@ export const LeftSidebarDrawer: React.FC<LeftSidebarDrawerProps> = ({
                     }}
                   >
                     <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <Newspaper size={15} style={{ color: isActive ? '#0284c7' : '#94a3b8' }} />
+                      <Newspaper size={15} style={{ color: isActive ? '#E10600' : '#94a3b8' }} />
                       {cat}
                     </span>
                     <ChevronRight size={14} style={{ color: '#cbd5e1' }} />
@@ -392,7 +392,7 @@ export const LeftSidebarDrawer: React.FC<LeftSidebarDrawerProps> = ({
                   textAlign: 'left',
                 }}
               >
-                <BarChart2 size={15} style={{ color: '#0284c7' }} /> Databoks &amp; Statistik Publik
+                <BarChart2 size={15} style={{ color: '#E10600' }} /> Databoks &amp; Statistik Publik
               </button>
 
               <button
@@ -529,7 +529,7 @@ export const LeftSidebarDrawer: React.FC<LeftSidebarDrawerProps> = ({
                 cursor: 'pointer',
               }}
             >
-              <ShieldCheck size={16} style={{ color: '#0284c7' }} /> Portal Admin Redaksi / CMS
+              <ShieldCheck size={16} style={{ color: '#08204D' }} /> Portal Admin Redaksi / CMS
             </button>
             <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '11px', color: '#94a3b8' }}>
               &copy; {new Date().getFullYear()} Portal Berita Akses Khusus. All rights reserved.

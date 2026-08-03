@@ -561,11 +561,11 @@ export default function App() {
         {/* Professional Footer */}
         <footer
           style={{
-            backgroundColor: '#0b2545',
+            backgroundColor: '#08204D',
             color: '#94a3b8',
             padding: '40px 16px 20px',
             marginTop: '40px',
-            borderTop: '4px solid #0056b3',
+            borderTop: '4px solid #E10600',
           }}
         >
           <div
@@ -780,10 +780,10 @@ export default function App() {
         {/* Footer */}
         <footer
           style={{
-            backgroundColor: '#0b2545',
+            backgroundColor: '#08204D',
             color: '#94a3b8',
             padding: '40px 16px 20px',
-            borderTop: '4px solid #0056b3',
+            borderTop: '4px solid #E10600',
           }}
         >
           <div
@@ -1047,7 +1047,7 @@ export default function App() {
               Pembaruan Cloud Database &amp; REST API: <strong>Berjalan Live</strong>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#38bdf8' }} />
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#E10600' }} />
               Penyelarasan Seluruh Browser: <strong>Otomatis (Real-time)</strong>
             </div>
           </div>
@@ -1055,7 +1055,7 @@ export default function App() {
           <button
             onClick={() => navigateTo('/admin')}
             style={{
-              backgroundColor: '#0284c7',
+              backgroundColor: '#E10600',
               color: '#ffffff',
               border: 'none',
               padding: '12px 24px',
@@ -1161,11 +1161,11 @@ export default function App() {
       {/* Professional Footer */}
       <footer
         style={{
-          backgroundColor: '#0b2545',
+          backgroundColor: '#08204D',
           color: '#94a3b8',
           padding: '40px 16px 20px',
           marginTop: '40px',
-          borderTop: '4px solid #0056b3',
+          borderTop: '4px solid #E10600',
         }}
       >
         <div

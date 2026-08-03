@@ -97,7 +97,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span
               style={{
-                backgroundColor: '#0284c7',
+                backgroundColor: '#08204D',
                 color: '#ffffff',
                 fontSize: '11px',
                 fontWeight: 700,
@@ -112,7 +112,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
             {article.isPremium && (
               <span
                 style={{
-                  backgroundColor: '#e11d48',
+                  backgroundColor: '#E10600',
                   color: '#ffffff',
                   fontSize: '11px',
                   fontWeight: 800,
@@ -193,15 +193,15 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <User size={14} color="#0284c7" />
+              <User size={14} color="#E10600" />
               <span>Oleh: <strong>{article.author || 'Tim Redaksi ASQI NEWS'}</strong></span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Calendar size={14} color="#0284c7" />
+              <Calendar size={14} color="#E10600" />
               <span>{article.publishedAt}</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Eye size={14} color="#0284c7" />
+              <Eye size={14} color="#E10600" />
               <span><strong>{(article.views || 1).toLocaleString('id-ID')}</strong> kali dibaca</span>
             </div>
           </div>
@@ -282,14 +282,14 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
                       color: '#ffffff',
                       textAlign: 'center',
                       boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)',
-                      border: '2px solid #e11d48',
+                      border: '2px solid #E10600',
                     }}
                   >
                     <div
                       style={{
                         width: '52px',
                         height: '52px',
-                        backgroundColor: '#e11d48',
+                        backgroundColor: '#E10600',
                         borderRadius: '50%',
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -314,7 +314,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
                           if (onOpenSubscribeModal) onOpenSubscribeModal();
                         }}
                         style={{
-                          backgroundColor: '#e11d48',
+                          backgroundColor: '#E10600',
                           color: '#ffffff',
                           border: 'none',
                           padding: '12px 22px',

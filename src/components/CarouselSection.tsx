@@ -49,7 +49,7 @@ export const CarouselSection: React.FC<CarouselSectionProps> = ({ slides, onArti
         <div className="carousel-overlay">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
             <span style={{
-              background: '#0284c7',
+              background: '#08204D',
               color: '#fff',
               fontSize: '11px',
               fontWeight: 700,
@@ -63,7 +63,7 @@ export const CarouselSection: React.FC<CarouselSectionProps> = ({ slides, onArti
 
             {currentSlide.isPremium && (
               <span style={{
-                background: '#e11d48',
+                background: '#E10600',
                 color: '#fff',
                 fontSize: '11px',
                 fontWeight: 800,

@@ -18,7 +18,7 @@ export const PopularSidebar: React.FC<PopularSidebarProps> = ({
     <section className="section-block">
       <div className="section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <TrendingUp size={18} style={{ color: '#dc2626' }} /> Artikel Terpopuler
+          <TrendingUp size={18} style={{ color: '#E10600' }} /> Artikel Terpopuler
         </h3>
         <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>Otomatis Teratas</span>
       </div>
@@ -39,7 +39,7 @@ export const PopularSidebar: React.FC<PopularSidebarProps> = ({
               style={{
                 fontSize: '18px',
                 fontWeight: 800,
-                color: idx === 0 ? '#dc2626' : idx === 1 ? '#ea580c' : idx === 2 ? '#d97706' : '#94a3b8',
+                color: idx === 0 ? '#E10600' : idx === 1 ? '#ea580c' : idx === 2 ? '#d97706' : '#94a3b8',
                 minWidth: '22px',
                 textAlign: 'center',
                 lineHeight: 1.2,
@@ -69,10 +69,10 @@ export const PopularSidebar: React.FC<PopularSidebarProps> = ({
                 {article.title}
               </a>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '4px', fontSize: '11px', color: '#64748b' }}>
-                <span style={{ backgroundColor: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', fontWeight: 600, color: '#0369a1' }}>
+                <span style={{ backgroundColor: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', fontWeight: 600, color: '#08204D' }}>
                   {article.category}
                 </span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '3px', fontWeight: 600, color: '#0284c7' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '3px', fontWeight: 600, color: '#E10600' }}>
                   <Eye size={12} /> {(article.views || 0).toLocaleString('id-ID')} pembaca
                 </span>
               </div>

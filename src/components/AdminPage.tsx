@@ -161,7 +161,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
           { id: 'ql-4', label: 'ASQI Plus', category: 'ASQI', icon: 'badge', isHighlighted: true },
         ],
         subscribeButtonText: 'Langganan',
-        subscribeButtonBgColor: '#e11d48',
+        subscribeButtonBgColor: '#E10600',
         loginButtonText: 'Masuk',
         showSearchBox: true,
       }
@@ -755,7 +755,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
         );
       case 'editor':
         return (
-          <span style={{ background: '#0284c7', color: '#ffffff', padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 700 }}>
+          <span style={{ background: '#08204D', color: '#ffffff', padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 700 }}>
             EDITOR
           </span>
         );
@@ -777,7 +777,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
         <div style={{ maxWidth: '480px', width: '100%', backgroundColor: '#1e293b', borderRadius: '12px', border: '1px solid #334155', padding: '32px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)' }}>
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#ffffff', marginBottom: '12px' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#08204D', color: '#ffffff', marginBottom: '12px' }}>
               <Shield size={24} />
             </div>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px' }}>
@@ -833,7 +833,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
             <button
               type="submit"
               disabled={isSubmittingLogin}
-              style={{ backgroundColor: '#0284c7', color: '#ffffff', border: 'none', padding: '12px', borderRadius: '6px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'background 0.2s', marginTop: '8px' }}
+              style={{ backgroundColor: '#E10600', color: '#ffffff', border: 'none', padding: '12px', borderRadius: '6px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'background 0.2s', marginTop: '8px' }}
             >
               <Lock size={16} /> {isSubmittingLogin ? 'Memverifikasi...' : 'Masuk ke Panel CMS'}
             </button>
@@ -998,9 +998,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                 <button
                   onClick={() => setActiveTab('articles')}
                   style={{
-                    backgroundColor: activeTab === 'articles' ? '#0284c7' : '#0f172a',
+                    backgroundColor: activeTab === 'articles' ? '#E10600' : '#0f172a',
                     color: '#ffffff',
-                    border: `1px solid ${activeTab === 'articles' ? '#38bdf8' : '#334155'}`,
+                    border: `1px solid ${activeTab === 'articles' ? '#f43f5e' : '#334155'}`,
                     padding: '10px 14px',
                     borderRadius: '6px',
                     fontSize: '13px',
@@ -1013,7 +1013,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                     width: '100%',
                   }}
                 >
-                  <FileText size={16} style={{ color: activeTab === 'articles' ? '#ffffff' : '#38bdf8' }} /> Kelola Berita
+                  <FileText size={16} style={{ color: activeTab === 'articles' ? '#ffffff' : '#f43f5e' }} /> Kelola Berita
                 </button>
               )}
 
@@ -1021,9 +1021,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                 <button
                   onClick={() => setActiveTab('header')}
                   style={{
-                    backgroundColor: activeTab === 'header' ? '#0284c7' : '#0f172a',
+                    backgroundColor: activeTab === 'header' ? '#E10600' : '#0f172a',
                     color: '#ffffff',
-                    border: `1px solid ${activeTab === 'header' ? '#38bdf8' : '#334155'}`,
+                    border: `1px solid ${activeTab === 'header' ? '#f43f5e' : '#334155'}`,
                     padding: '10px 14px',
                     borderRadius: '6px',
                     fontSize: '13px',
@@ -1044,9 +1044,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                 <button
                   onClick={() => setActiveTab('categories')}
                   style={{
-                    backgroundColor: activeTab === 'categories' ? '#0284c7' : '#0f172a',
+                    backgroundColor: activeTab === 'categories' ? '#E10600' : '#0f172a',
                     color: '#ffffff',
-                    border: `1px solid ${activeTab === 'categories' ? '#38bdf8' : '#334155'}`,
+                    border: `1px solid ${activeTab === 'categories' ? '#f43f5e' : '#334155'}`,
                     padding: '10px 14px',
                     borderRadius: '6px',
                     fontSize: '13px',
@@ -1067,9 +1067,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                 <button
                   onClick={() => setActiveTab('insight')}
                   style={{
-                    backgroundColor: activeTab === 'insight' ? '#0284c7' : '#0f172a',
+                    backgroundColor: activeTab === 'insight' ? '#E10600' : '#0f172a',
                     color: '#ffffff',
-                    border: `1px solid ${activeTab === 'insight' ? '#38bdf8' : '#334155'}`,
+                    border: `1px solid ${activeTab === 'insight' ? '#f43f5e' : '#334155'}`,
                     padding: '10px 14px',
                     borderRadius: '6px',
                     fontSize: '13px',
@@ -1090,9 +1090,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                 <button
                   onClick={() => setActiveTab('databoks')}
                   style={{
-                    backgroundColor: activeTab === 'databoks' ? '#0284c7' : '#0f172a',
+                    backgroundColor: activeTab === 'databoks' ? '#E10600' : '#0f172a',
                     color: '#ffffff',
-                    border: `1px solid ${activeTab === 'databoks' ? '#38bdf8' : '#334155'}`,
+                    border: `1px solid ${activeTab === 'databoks' ? '#f43f5e' : '#334155'}`,
                     padding: '10px 14px',
                     borderRadius: '6px',
                     fontSize: '13px',
@@ -1113,9 +1113,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                 <button
                   onClick={() => setActiveTab('about_asqi')}
                   style={{
-                    backgroundColor: activeTab === 'about_asqi' ? '#0284c7' : '#0f172a',
+                    backgroundColor: activeTab === 'about_asqi' ? '#E10600' : '#0f172a',
                     color: '#ffffff',
-                    border: `1px solid ${activeTab === 'about_asqi' ? '#38bdf8' : '#334155'}`,
+                    border: `1px solid ${activeTab === 'about_asqi' ? '#f43f5e' : '#334155'}`,
                     padding: '10px 14px',
                     borderRadius: '6px',
                     fontSize: '13px',
@@ -1128,7 +1128,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                     width: '100%',
                   }}
                 >
-                  <Globe size={16} style={{ color: activeTab === 'about_asqi' ? '#ffffff' : '#38bdf8' }} /> Tentang ASQI (Banner)
+                  <Globe size={16} style={{ color: activeTab === 'about_asqi' ? '#ffffff' : '#f43f5e' }} /> Tentang ASQI (Banner)
                 </button>
               )}
 
@@ -1283,7 +1283,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                       type="button"
                       onClick={() => setGalleryImages([...galleryImages, { url: '', caption: '' }])}
                       style={{
-                        backgroundColor: '#0284c7',
+                        backgroundColor: '#08204D',
                         color: '#ffffff',
                         border: 'none',
                         padding: '6px 12px',
@@ -1413,7 +1413,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                 <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '12px', marginTop: '12px' }}>
                   <button
                     type="submit"
-                    style={{ backgroundColor: '#0284c7', color: '#ffffff', border: 'none', padding: '10px 20px', borderRadius: '6px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}
+                    style={{ backgroundColor: '#E10600', color: '#ffffff', border: 'none', padding: '10px 20px', borderRadius: '6px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}
                   >
                     {editingArticleId ? 'Simpan Perubahan Berita' : 'Terbitkan Berita Sekarang'}
                   </button>
@@ -1457,7 +1457,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                       {(user.role === 'superadmin' || user.role === 'editor' || art.author === user.name) && (
                         <button
                           onClick={() => handleEditClick(art)}
-                          style={{ backgroundColor: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                          style={{ backgroundColor: '#08204D', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                         >
                           <Edit size={12} /> Edit
                         </button>
@@ -1565,7 +1565,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                   <button
                     type="submit"
                     disabled={isSavingHeader}
-                    style={{ backgroundColor: '#0284c7', color: '#ffffff', border: 'none', padding: '12px 24px', borderRadius: '6px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                    style={{ backgroundColor: '#08204D', color: '#ffffff', border: 'none', padding: '12px 24px', borderRadius: '6px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
                   >
                     <CheckCircle size={16} /> {isSavingHeader ? 'Menyimpan...' : 'Simpan Pengaturan Header Bar'}
                   </button>
@@ -1639,7 +1639,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
 
                   <button
                     type="submit"
-                    style={{ backgroundColor: '#0284c7', color: '#ffffff', border: 'none', padding: '10px', borderRadius: '6px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                    style={{ backgroundColor: '#08204D', color: '#ffffff', border: 'none', padding: '10px', borderRadius: '6px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                   >
                     <Plus size={16} /> Tambahkan ke Daftar Header Link
                   </button>
@@ -1724,7 +1724,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                 <button
                   type="submit"
                   disabled={isSavingCategory}
-                  style={{ backgroundColor: '#0284c7', color: '#ffffff', border: 'none', padding: '12px', borderRadius: '6px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                  style={{ backgroundColor: '#08204D', color: '#ffffff', border: 'none', padding: '12px', borderRadius: '6px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                 >
                   <Plus size={16} /> {isSavingCategory ? 'Menyimpan...' : 'Tambah Kategori Baru'}
                 </button>
@@ -1897,7 +1897,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                     style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#ffffff', fontSize: '14px' }}
                   />
                 </div>
-                <button type="submit" style={{ backgroundColor: '#0284c7', color: '#ffffff', border: 'none', padding: '10px', borderRadius: '6px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}>
+                <button type="submit" style={{ backgroundColor: '#08204D', color: '#ffffff', border: 'none', padding: '10px', borderRadius: '6px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}>
                   Tambah Infografik
                 </button>
               </form>
@@ -1940,7 +1940,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                     style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#ffffff', fontSize: '14px' }}
                   />
                 </div>
-                <button type="submit" style={{ backgroundColor: '#0284c7', color: '#ffffff', border: 'none', padding: '10px', borderRadius: '6px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}>
+                <button type="submit" style={{ backgroundColor: '#08204D', color: '#ffffff', border: 'none', padding: '10px', borderRadius: '6px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}>
                   Tambah Databoks
                 </button>
               </form>
@@ -2063,7 +2063,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                   Pratinjau Tampilan di Halaman Depan (Preview)
                 </div>
                 <div style={{ background: '#ffffff', borderRadius: '10px', padding: '16px', border: '1px solid #cbd5e1' }}>
-                  <div style={{ fontSize: '14px', fontWeight: 800, color: '#0284c7', marginBottom: '10px', borderBottom: '1px solid #e2e8f0', paddingBottom: '6px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 800, color: '#08204D', marginBottom: '10px', borderBottom: '1px solid #e2e8f0', paddingBottom: '6px' }}>
                     {aboutTitle || 'TENTANG ASQI'}
                   </div>
                   <a
@@ -2081,7 +2081,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                     ) : (
                       <div style={{ color: '#94a3b8', fontSize: '13px', padding: '20px' }}>Belum ada gambar logo yang dipilih</div>
                     )}
-                    {aboutCompanyName && <div style={{ fontSize: '14px', fontWeight: 700, color: '#0369a1' }}>{aboutCompanyName}</div>}
+                    {aboutCompanyName && <div style={{ fontSize: '14px', fontWeight: 700, color: '#08204D' }}>{aboutCompanyName}</div>}
                     {aboutDescription && <div style={{ fontSize: '12px', color: '#475569', textAlign: 'center' }}>{aboutDescription}</div>}
                   </a>
                 </div>
@@ -2092,7 +2092,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                   type="submit"
                   disabled={isSavingAbout}
                   style={{
-                    backgroundColor: '#0284c7',
+                    backgroundColor: '#E10600',
                     color: '#ffffff',
                     border: 'none',
                     padding: '12px 24px',
@@ -2340,7 +2340,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{
-                    backgroundColor: '#0284c7',
+                    backgroundColor: '#08204D',
                     color: '#ffffff',
                     padding: '12px 18px',
                     borderRadius: '6px',

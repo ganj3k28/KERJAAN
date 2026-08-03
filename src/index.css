@@ -38,13 +38,13 @@ a {
 .logo {
   font-size: 26px;
   font-weight: 800;
-  color: #0b2545;
+  color: #08204D;
   letter-spacing: -0.5px;
 }
 
 .logo span {
-  color: #134074;
-  font-weight: 400;
+  color: #E10600;
+  font-weight: 700;
   font-size: 18px;
 }
 
@@ -83,7 +83,7 @@ a {
 /* Navigation Menu */
 .nav-bar {
   background: #ffffff;
-  border-bottom: 2px solid #0056b3;
+  border-bottom: 3px solid #001e58;
   box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
 
@@ -107,7 +107,13 @@ a {
 }
 
 .nav-container a:hover, .nav-container a.active {
-  color: #0056b3;
+  color: #001e58;
+  font-weight: 700;
+}
+
+.nav-container a.active {
+  border-bottom: 2px solid #001e58;
+  margin-bottom: -1px;
 }
 
 /* Main Container Layout */
@@ -216,7 +222,7 @@ a {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 2px solid #0f172a;
+  border-bottom: 2px solid #08204D;
   padding-bottom: 8px;
   margin-bottom: 16px;
 }
@@ -226,13 +232,13 @@ a {
   font-weight: 800;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  color: #0f172a;
+  color: #08204D;
 }
 
 .see-all {
   font-size: 12px;
   font-weight: 600;
-  color: #0284c7;
+  color: #E10600;
 }
 
 /* Infografik Grid */
@@ -303,7 +309,7 @@ a {
 }
 
 .news-title:hover {
-  color: #0284c7;
+  color: #E10600;
 }
 
 .news-meta {
@@ -326,7 +332,7 @@ a {
 
 /* Databoks Widget Block */
 .databoks-block {
-  background: linear-gradient(135deg, #0b2545 0%, #134074 100%);
+  background: linear-gradient(135deg, #08204D 0%, #0a2540 100%);
   border-radius: 8px;
   padding: 16px;
   color: #ffffff;
@@ -404,13 +410,13 @@ a {
 }
 
 .popular-item a:hover {
-  color: #0284c7;
+  color: #E10600;
 }
 
 /* Event Widget */
 .event-widget {
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
   border-radius: 8px;
   padding: 16px;
   text-align: center;
@@ -418,12 +424,12 @@ a {
 
 .event-widget h4 {
   font-size: 14px;
-  color: #1e40af;
+  color: #08204D;
   margin-bottom: 8px;
 }
 
 .event-widget button {
-  background: #2563eb;
+  background: #E10600;
   color: white;
   border: none;
   padding: 6px 16px;

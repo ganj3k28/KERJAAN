@@ -32,7 +32,7 @@ export const DataboksSection: React.FC<DataboksSectionProps> = ({ aboutAsqiData 
       }}
     >
       <div className="databoks-header" style={{ marginBottom: '14px', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px' }}>
-        <div className="databoks-logo" style={{ color: '#0284c7', fontSize: '16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+        <div className="databoks-logo" style={{ color: '#08204D', fontSize: '16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
           {sectionTitle}
         </div>
         <a
@@ -40,7 +40,7 @@ export const DataboksSection: React.FC<DataboksSectionProps> = ({ aboutAsqiData 
           target="_blank"
           rel="noopener noreferrer"
           className="see-all"
-          style={{ color: '#0284c7', fontWeight: 700, fontSize: '13px', textDecoration: 'none' }}
+          style={{ color: '#E10600', fontWeight: 700, fontSize: '13px', textDecoration: 'none' }}
         >
           Kunjungi Situs Resmi ↗
         </a>
@@ -63,9 +63,9 @@ export const DataboksSection: React.FC<DataboksSectionProps> = ({ aboutAsqiData 
           boxShadow: '0 2px 8px rgba(0, 0, 0, 0.02)',
         }}
         onMouseOver={(e) => {
-          e.currentTarget.style.borderColor = '#0284c7';
+          e.currentTarget.style.borderColor = '#E10600';
           e.currentTarget.style.transform = 'translateY(-2px)';
-          e.currentTarget.style.boxShadow = '0 6px 16px rgba(2, 132, 199, 0.12)';
+          e.currentTarget.style.boxShadow = '0 6px 16px rgba(225, 6, 0, 0.12)';
         }}
         onMouseOut={(e) => {
           e.currentTarget.style.borderColor = '#e2e8f0';
@@ -88,7 +88,7 @@ export const DataboksSection: React.FC<DataboksSectionProps> = ({ aboutAsqiData 
         {(companyName || description) && (
           <div style={{ textAlign: 'center', maxWidth: '600px', marginTop: '4px' }}>
             {companyName && (
-              <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: 700, color: '#0369a1' }}>
+              <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: 700, color: '#08204D' }}>
                 {companyName}
               </h4>
             )}

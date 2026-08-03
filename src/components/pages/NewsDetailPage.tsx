@@ -119,7 +119,7 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
               padding: '6px 14px',
               fontSize: '13px',
               fontWeight: 600,
-              color: '#0284c7',
+              color: '#E10600',
               cursor: 'pointer',
               display: 'inline-flex',
               alignItems: 'center',
@@ -148,7 +148,7 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
             <span
               style={{
-                backgroundColor: '#0284c7',
+                backgroundColor: '#08204D',
                 color: '#ffffff',
                 fontSize: '11px',
                 fontWeight: 700,
@@ -163,7 +163,7 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
             {article.isPremium && (
               <span
                 style={{
-                  backgroundColor: '#e11d48',
+                  backgroundColor: '#E10600',
                   color: '#ffffff',
                   fontSize: '11px',
                   fontWeight: 800,
@@ -226,17 +226,17 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <User size={15} color="#0284c7" />
+              <User size={15} color="#E10600" />
               <span>
                 Oleh: <strong>{article.author || 'Tim Redaksi ASQI NEWS'}</strong>
               </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Calendar size={15} color="#0284c7" />
+              <Calendar size={15} color="#E10600" />
               <span>{article.publishedAt}</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Eye size={15} color="#0284c7" />
+              <Eye size={15} color="#E10600" />
               <span>
                 <strong>{(article.views || 1).toLocaleString('id-ID')}</strong> kali dibaca
               </span>
@@ -288,7 +288,7 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
                 marginBottom: '24px',
                 padding: '14px 18px',
                 backgroundColor: '#f1f5f9',
-                borderLeft: '4px solid #0284c7',
+                borderLeft: '4px solid #08204D',
                 borderRadius: '0 6px 6px 0',
               }}
             >
@@ -318,14 +318,14 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
                       color: '#ffffff',
                       textAlign: 'center',
                       boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)',
-                      border: '2px solid #e11d48',
+                      border: '2px solid #E10600',
                     }}
                   >
                     <div
                       style={{
                         width: '56px',
                         height: '56px',
-                        backgroundColor: '#e11d48',
+                        backgroundColor: '#E10600',
                         borderRadius: '50%',
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -347,7 +347,7 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
                       <button
                         onClick={onOpenSubscribeModal}
                         style={{
-                          backgroundColor: '#e11d48',
+                          backgroundColor: '#E10600',
                           color: '#ffffff',
                           border: 'none',
                           padding: '12px 24px',

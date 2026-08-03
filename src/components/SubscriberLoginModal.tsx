@@ -173,7 +173,7 @@ export const SubscriberLoginModal: React.FC<SubscriberLoginModalProps> = ({
                 padding: '8px',
                 borderRadius: '6px',
                 border: 'none',
-                backgroundColor: activeTab === 'subscriber' ? '#0284c7' : 'rgba(255, 255, 255, 0.1)',
+                backgroundColor: activeTab === 'subscriber' ? '#E10600' : 'rgba(255, 255, 255, 0.1)',
                 color: '#ffffff',
                 fontSize: '12px',
                 fontWeight: 700,
@@ -196,7 +196,7 @@ export const SubscriberLoginModal: React.FC<SubscriberLoginModalProps> = ({
                 padding: '8px',
                 borderRadius: '6px',
                 border: 'none',
-                backgroundColor: activeTab === 'admin' ? '#0284c7' : 'rgba(255, 255, 255, 0.1)',
+                backgroundColor: activeTab === 'admin' ? '#E10600' : 'rgba(255, 255, 255, 0.1)',
                 color: '#ffffff',
                 fontSize: '12px',
                 fontWeight: 700,
@@ -284,7 +284,7 @@ export const SubscriberLoginModal: React.FC<SubscriberLoginModalProps> = ({
               type="submit"
               disabled={loading}
               style={{
-                backgroundColor: '#e11d48',
+                backgroundColor: '#001e58',
                 color: '#ffffff',
                 border: 'none',
                 padding: '12px',
@@ -297,7 +297,7 @@ export const SubscriberLoginModal: React.FC<SubscriberLoginModalProps> = ({
                 justifyContent: 'center',
                 gap: '8px',
                 marginTop: '8px',
-                boxShadow: '0 2px 4px rgba(225, 29, 72, 0.3)',
+                boxShadow: '0 2px 4px rgba(0, 30, 88, 0.3)',
               }}
             >
               <Crown size={16} /> {loading ? 'Memproses Login...' : 'Masuk Pembaca Akses Khusus'}
@@ -353,7 +353,7 @@ export const SubscriberLoginModal: React.FC<SubscriberLoginModalProps> = ({
                   <strong style={{ fontSize: '12px', color: '#0f172a', display: 'block' }}>Siti Rahma (Bulanan)</strong>
                   <span style={{ fontSize: '11px', color: '#64748b' }}>siti@langganan.id</span>
                 </div>
-                <span style={{ backgroundColor: '#0284c7', color: '#ffffff', fontSize: '10px', fontWeight: 800, padding: '2px 6px', borderRadius: '4px' }}>
+                <span style={{ backgroundColor: '#E10600', color: '#ffffff', fontSize: '10px', fontWeight: 800, padding: '2px 6px', borderRadius: '4px' }}>
                   AKSI CEPAT ➔
                 </span>
               </button>
@@ -372,7 +372,7 @@ export const SubscriberLoginModal: React.FC<SubscriberLoginModalProps> = ({
                 onOpenSubscribeModal();
               }}
               style={{
-                backgroundColor: '#e11d48',
+                backgroundColor: '#001e58',
                 color: '#ffffff',
                 border: 'none',
                 padding: '6px 12px',

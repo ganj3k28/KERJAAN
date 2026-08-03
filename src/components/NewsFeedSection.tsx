@@ -42,7 +42,7 @@ export const NewsFeedSection: React.FC<NewsFeedSectionProps> = ({
             style={{
               background: 'none',
               border: 'none',
-              color: '#0284c7',
+              color: '#E10600',
               fontSize: '12px',
               fontWeight: 600,
               cursor: 'pointer',
@@ -89,7 +89,7 @@ export const NewsFeedSection: React.FC<NewsFeedSectionProps> = ({
                         {article.isPremium && (
                           <span
                             style={{
-                              backgroundColor: '#e11d48',
+                              backgroundColor: '#E10600',
                               color: '#ffffff',
                               fontSize: '10px',
                               fontWeight: 800,
@@ -107,7 +107,7 @@ export const NewsFeedSection: React.FC<NewsFeedSectionProps> = ({
                         <span>{article.title}</span>
                       </a>
                       <div className="news-meta">
-                        <span style={{ fontWeight: 600, color: '#0369a1' }}>{article.category}</span> • {article.publishedAt.toUpperCase()} • <span style={{ color: '#0284c7', fontWeight: 600 }}>👁️ {(article.views || 0).toLocaleString('id-ID')} dibaca</span>
+                        <span style={{ fontWeight: 600, color: '#08204D' }}>{article.category}</span> • {article.publishedAt.toUpperCase()} • <span style={{ color: '#E10600', fontWeight: 600 }}>👁️ {(article.views || 0).toLocaleString('id-ID')} dibaca</span>
                       </div>
                     </div>
                     <p className="news-snippet">{article.snippet}</p>
