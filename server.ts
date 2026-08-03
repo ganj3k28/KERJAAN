@@ -809,7 +809,7 @@ app.get([
     }
 
     if (!article || !article.image) {
-      return res.redirect('https://asqinews.com/asqinews-logo.svg');
+      return res.redirect('https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=1200&h=630&q=80');
     }
 
     const img = article.image.trim();
@@ -857,7 +857,7 @@ app.get([
     return res.redirect(fullImgUrl);
   } catch (err) {
     console.error('Error serving article image:', err);
-    return res.redirect('https://asqinews.com/asqinews-logo.svg');
+    return res.redirect('https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=1200&h=630&q=80');
   }
 });
 
@@ -954,18 +954,19 @@ async function injectMetaTags(html: string, req: express.Request): Promise<strin
         if (cleanImg.startsWith('http://') || cleanImg.startsWith('https://')) {
           if (cleanImg.toLowerCase().includes('.png')) imgMimeType = 'image/png';
           else if (cleanImg.toLowerCase().includes('.webp')) imgMimeType = 'image/webp';
-          else if (cleanImg.toLowerCase().includes('.svg')) imgMimeType = 'image/svg+xml';
+          else if (cleanImg.toLowerCase().includes('.gif')) imgMimeType = 'image/gif';
+          else imgMimeType = 'image/jpeg';
         } else if (cleanImg.startsWith('data:image/')) {
           if (cleanImg.includes('data:image/png')) imgMimeType = 'image/png';
           else if (cleanImg.includes('data:image/webp')) imgMimeType = 'image/webp';
           cleanImg = `${protocol}://${host}/api/news/${article.id}/image.jpg`;
-        } else if (cleanImg) {
+        } else if (cleanImg && !cleanImg.toLowerCase().endsWith('.svg')) {
           cleanImg = `${protocol}://${host}${cleanImg.startsWith('/') ? '' : '/'}${cleanImg}`;
           if (cleanImg.toLowerCase().includes('.png')) imgMimeType = 'image/png';
-          else if (cleanImg.toLowerCase().includes('.svg')) imgMimeType = 'image/svg+xml';
+          else imgMimeType = 'image/jpeg';
         } else {
-          cleanImg = `${protocol}://${host}/asqinews-logo.svg`;
-          imgMimeType = 'image/svg+xml';
+          cleanImg = `${protocol}://${host}/api/news/${article.id}/image.jpg`;
+          imgMimeType = 'image/jpeg';
         }
 
         const escTitle = escapeHtmlAttr(pageTitle);
