@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { collection, onSnapshot, doc, setDoc } from 'firebase/firestore';
 import { Wrench, Shield, Lock, AlertTriangle, RefreshCw } from 'lucide-react';
 import { db } from './lib/firebase';
-import { NewsArticle, Infographic, DataboksItem, VideoItem, HeaderSettings, SubscriberUser, AboutAsqiData } from './types';
+import { NewsArticle, Infographic, DataboksItem, VideoItem, HeaderSettings, SubscriberUser, AboutAsqiData, GlobalAdsSettings } from './types';
 import { initialData } from './initialData';
 import { Header } from './components/Header';
 import { Navbar } from './components/Navbar';
@@ -24,6 +24,7 @@ import { CyberMediaGuidelinesPage } from './components/pages/CyberMediaGuideline
 import { CopyrightPage } from './components/pages/CopyrightPage';
 import { DataServicesPage } from './components/pages/DataServicesPage';
 import { NewsDetailPage } from './components/pages/NewsDetailPage';
+import { AdBox } from './components/AdBox';
 
 export default function App() {
   const [allArticles, setAllArticles] = useState<NewsArticle[]>(() => {
@@ -120,6 +121,14 @@ export default function App() {
 
   // Header Settings State
   const [headerSettings, setHeaderSettings] = useState<HeaderSettings | undefined>(undefined);
+
+  // Global Ads Settings State
+  const [globalAds, setGlobalAds] = useState<GlobalAdsSettings>({
+    headerBanner: { id: 'ad-header', placement: 'header', title: 'GIIAS 2026', imageUrl: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=1200&q=80', targetUrl: 'https://asqi.or.id/', enabled: true, badgeText: 'IKLAN SPONSOR' },
+    feedMiddleBanner: { id: 'ad-feed', placement: 'feed', title: 'Sertifikasi Mutu ASQI', imageUrl: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=1200&q=80', targetUrl: 'https://asqi.or.id/', enabled: true, badgeText: 'INFO SPONSOR' },
+    sidebarBanner1: { id: 'ad-sidebar-1', placement: 'sidebar', title: 'Forum Manajemen Mutu BUMN', imageUrl: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=600&q=80', targetUrl: 'https://asqi.or.id/', enabled: true, badgeText: 'SPONSORSHIP' },
+    sidebarBanner2: { id: 'ad-sidebar-2', placement: 'sidebar', title: 'Konsultasi Indeks Kepuasan Masyarakat', imageUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=80', targetUrl: 'https://asqi.or.id/', enabled: true, badgeText: 'IKLAN MITRA' },
+  });
 
   // Tentang ASQI Data State
   const [aboutAsqiData, setAboutAsqiData] = useState<AboutAsqiData>({
@@ -319,6 +328,7 @@ export default function App() {
     let unsubCats: (() => void) | null = null;
     let unsubHeader: (() => void) | null = null;
     let unsubAbout: (() => void) | null = null;
+    let unsubAds: (() => void) | null = null;
 
     try {
       unsubArticles = onSnapshot(collection(db, 'articles'), (snapshot) => {
@@ -386,9 +396,26 @@ export default function App() {
           });
         }
       });
+
+      unsubAds = onSnapshot(doc(db, 'settings', 'global_ads'), (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data() as GlobalAdsSettings;
+          setGlobalAds(data);
+        }
+      });
     } catch (err) {
       console.error('Firestore real-time subscription notice:', err);
     }
+
+    // Also fetch maintenance, about-asqi, and global-ads from REST API
+    fetch('/api/global-ads')
+      .then((r) => r.json())
+      .then((res) => {
+        if (res?.success && res.ads) {
+          setGlobalAds(res.ads);
+        }
+      })
+      .catch(() => {});
 
     // Also fetch maintenance and about-asqi from REST API
     fetch('/api/maintenance')
@@ -431,6 +458,7 @@ export default function App() {
       if (unsubCats) unsubCats();
       if (unsubHeader) unsubHeader();
       if (unsubAbout) unsubAbout();
+      if (unsubAds) unsubAds();
       clearInterval(interval);
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('visibilitychange', handleFocus);
@@ -520,6 +548,7 @@ export default function App() {
             navigateTo('/');
           }}
           headerSettings={headerSettings}
+          headerAd={globalAds.headerBanner}
           subscriberUser={subscriberUser}
           onOpenLeftDrawer={() => setIsLeftDrawerOpen(true)}
           onSelectCategory={(cat) => {
@@ -546,6 +575,7 @@ export default function App() {
             article={activeNewsArticle}
             allArticles={allArticles}
             subscriberUser={subscriberUser}
+            globalAds={globalAds}
             onNavigateHome={() => {
               setSelectedArticle(null);
               navigateTo('/');
@@ -1088,6 +1118,7 @@ export default function App() {
         setSearchQuery={setSearchQuery}
         onSearchSubmit={handleSearchSubmit}
         headerSettings={headerSettings}
+        headerAd={globalAds.headerBanner}
         subscriberUser={subscriberUser}
         onOpenLeftDrawer={() => setIsLeftDrawerOpen(true)}
         onSelectCategory={(cat) => {
@@ -1125,6 +1156,7 @@ export default function App() {
             articles={filteredArticles}
             databoksItems={databoksItems}
             aboutAsqiData={aboutAsqiData}
+            globalAds={globalAds}
             activeCategory={activeCategory}
             searchQuery={searchQuery}
             onArticleClick={(article) => handleOpenArticle(article)}
@@ -1138,11 +1170,21 @@ export default function App() {
 
         {/* Sidebar Right */}
         <aside className="sidebar">
+          {/* Global Sidebar Ad 1 */}
+          {globalAds?.sidebarBanner1?.enabled && (
+            <AdBox ad={globalAds.sidebarBanner1} placement="sidebar" />
+          )}
+
           {/* Artikel Terpopuler */}
           <PopularSidebar
             popularArticles={popularArticles}
             onArticleClick={(article) => handleOpenArticle(article)}
           />
+
+          {/* Global Sidebar Ad 2 */}
+          {globalAds?.sidebarBanner2?.enabled && (
+            <AdBox ad={globalAds.sidebarBanner2} placement="sidebar" />
+          )}
 
           {/* Kalender Event */}
           <EventWidget onSubscribeClick={() => setShowSubscribeModal(true)} />
@@ -1152,9 +1194,6 @@ export default function App() {
             videos={videos}
             onPlayVideo={(video) => setSelectedVideo(video)}
           />
-
-          {/* Ad Banner Placeholder */}
-          <div className="ad-box">GIIAS 2026 ADVERTISEMENT</div>
         </aside>
       </div>
 

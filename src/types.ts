@@ -1,3 +1,28 @@
+export interface AdBanner {
+  id: string;
+  title: string;
+  imageUrl: string;
+  targetUrl: string;
+  badgeText?: string; // e.g. "IKLAN", "SPONSORSHIP", "PROMOSI"
+  enabled: boolean;
+  htmlScript?: string;
+  placement?: 'header' | 'sidebar' | 'article_top' | 'article_middle' | 'article_bottom' | 'feed';
+}
+
+export interface ArticleAdsSettings {
+  topAd?: AdBanner;     // Iklan Atas Berita (sebelum isi)
+  middleAd?: AdBanner;  // Iklan Tengah Berita (di tengah/setelah pertengahan teks)
+  bottomAd?: AdBanner;  // Iklan Bawah Berita (setelah isi artikel)
+}
+
+export interface GlobalAdsSettings {
+  headerBanner?: AdBanner;     // Iklan Leaderboard Atas (dibawah navbar)
+  feedMiddleBanner?: AdBanner; // Iklan Feed Tengah (antara carousel & feed)
+  sidebarBanner1?: AdBanner;   // Iklan Sidebar Utama (diantara Terpopuler & Widget Event)
+  sidebarBanner2?: AdBanner;   // Iklan Sidebar Sekunder (dibawah Video)
+  footerBanner?: AdBanner;     // Iklan Floating Footer / Bottom
+}
+
 export interface NewsArticle {
   id: string;
   title: string;
@@ -16,6 +41,7 @@ export interface NewsArticle {
   isPopular?: boolean;
   isPremium?: boolean; // Berita Berbayar Akses Khusus
   tags?: string[];
+  articleAds?: ArticleAdsSettings; // Isian iklan spesifik per artikel
 }
 
 export interface Infographic {

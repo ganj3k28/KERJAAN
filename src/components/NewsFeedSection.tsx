@@ -1,11 +1,13 @@
 import React from 'react';
-import { NewsArticle, DataboksItem, AboutAsqiData } from '../types';
+import { NewsArticle, DataboksItem, AboutAsqiData, GlobalAdsSettings } from '../types';
 import { DataboksSection } from './DataboksSection';
+import { AdBox } from './AdBox';
 
 interface NewsFeedSectionProps {
   articles: NewsArticle[];
   databoksItems: DataboksItem[];
   aboutAsqiData?: AboutAsqiData;
+  globalAds?: GlobalAdsSettings;
   activeCategory: string;
   searchQuery: string;
   onArticleClick: (article: NewsArticle) => void;
@@ -17,6 +19,7 @@ export const NewsFeedSection: React.FC<NewsFeedSectionProps> = ({
   articles,
   databoksItems,
   aboutAsqiData,
+  globalAds,
   activeCategory,
   searchQuery,
   onArticleClick,
@@ -117,6 +120,11 @@ export const NewsFeedSection: React.FC<NewsFeedSectionProps> = ({
                 {/* Embed Tentang ASQI Widget after 2nd item if not searching */}
                 {index === 1 && !searchQuery && (
                   <DataboksSection databoksItems={databoksItems} onSelectDataboks={onSelectDataboks} aboutAsqiData={aboutAsqiData} />
+                )}
+
+                {/* Embed Feed Banner Ad after 3rd item */}
+                {index === 3 && globalAds?.feedMiddleBanner?.enabled && (
+                  <AdBox ad={globalAds.feedMiddleBanner} placement="feed" />
                 )}
               </React.Fragment>
             );

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { NewsArticle, SubscriberUser, VideoItem } from '../../types';
+import { NewsArticle, SubscriberUser, VideoItem, GlobalAdsSettings } from '../../types';
 import {
   ArrowLeft,
   Calendar,
@@ -16,6 +16,7 @@ import {
 import { PopularSidebar } from '../PopularSidebar';
 import { EventWidget } from '../EventWidget';
 import { VideoSection } from '../VideoSection';
+import { AdBox } from '../AdBox';
 
 interface NewsDetailPageProps {
   article: NewsArticle;
@@ -27,6 +28,7 @@ interface NewsDetailPageProps {
   onOpenLoginModal?: () => void;
   videos: VideoItem[];
   onPlayVideo: (video: VideoItem) => void;
+  globalAds?: GlobalAdsSettings;
 }
 
 export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
@@ -39,6 +41,7 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
   onOpenLoginModal,
   videos,
   onPlayVideo,
+  globalAds,
 }) => {
   const [relatedArticles, setRelatedArticles] = useState<NewsArticle[]>([]);
   const [isSaved, setIsSaved] = useState(false);
@@ -243,6 +246,13 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
             </div>
           </div>
 
+          {/* Top Article Banner Ad */}
+          {article.articleAds?.topAd?.enabled && (
+            <div style={{ marginBottom: '24px' }}>
+              <AdBox ad={article.articleAds.topAd} placement="article" />
+            </div>
+          )}
+
           {/* Main Hero Image */}
           <div
             style={{
@@ -434,11 +444,25 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
                   </figure>
                 )}
 
+                {/* Middle Article Banner Ad */}
+                {article.articleAds?.middleAd?.enabled && (
+                  <div style={{ margin: '24px 0' }}>
+                    <AdBox ad={article.articleAds.middleAd} placement="article" />
+                  </div>
+                )}
+
                 {secondPart.map((para, idx) => (
                   <p key={`p2-${idx}`} style={{ marginBottom: '18px' }}>
                     {para}
                   </p>
                 ))}
+
+                {/* Bottom Article Banner Ad */}
+                {article.articleAds?.bottomAd?.enabled && (
+                  <div style={{ marginTop: '28px', marginBottom: '20px' }}>
+                    <AdBox ad={article.articleAds.bottomAd} placement="article" />
+                  </div>
+                )}
               </div>
             );
           })()}
@@ -588,7 +612,13 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
 
       {/* Right Sidebar */}
       <aside className="sidebar">
+        {globalAds?.sidebarBanner1?.enabled && (
+          <AdBox ad={globalAds.sidebarBanner1} placement="sidebar" />
+        )}
         <PopularSidebar popularArticles={popularArticles} onArticleClick={(art) => onSelectArticle(art)} />
+        {globalAds?.sidebarBanner2?.enabled && (
+          <AdBox ad={globalAds.sidebarBanner2} placement="sidebar" />
+        )}
         <EventWidget onSubscribeClick={onOpenSubscribeModal || (() => {})} />
         <VideoSection videos={videos} onPlayVideo={onPlayVideo} />
       </aside>

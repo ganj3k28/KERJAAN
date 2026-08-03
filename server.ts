@@ -260,6 +260,85 @@ app.post('/api/maintenance', (req, res) => {
   }
 });
 
+// DEFAULT GLOBAL ADS SETTINGS
+const defaultGlobalAds = {
+  headerBanner: {
+    id: 'ad-header',
+    title: 'GIIAS 2026 - Pameran Otomotif & Pelayanan Industri Terbesar Indonesia',
+    imageUrl: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&h=160&q=80',
+    targetUrl: 'https://asqi.or.id/',
+    badgeText: 'IKLAN SPONSOR',
+    enabled: true,
+  },
+  feedMiddleBanner: {
+    id: 'ad-feed',
+    title: 'Layanan Sertifikasi Mutu & Akreditasi Pelayanan Publik ASQI 2026',
+    imageUrl: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1200&h=200&q=80',
+    targetUrl: 'https://asqi.or.id/',
+    badgeText: 'INFO SPONSOR',
+    enabled: true,
+  },
+  sidebarBanner1: {
+    id: 'ad-side-1',
+    title: 'Forum Manajemen Mutu Pelayanan BUMN & Korporasi 2026',
+    imageUrl: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=600&h=400&q=80',
+    targetUrl: 'https://asqi.or.id/',
+    badgeText: 'SPONSORSHIP',
+    enabled: true,
+  },
+  sidebarBanner2: {
+    id: 'ad-side-2',
+    title: 'Konsultasi Indeks Kepuasan Masyarakat (IKM) & LAKIP',
+    imageUrl: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=600&h=400&q=80',
+    targetUrl: 'https://asqi.or.id/',
+    badgeText: 'IKLAN MITRA',
+    enabled: true,
+  },
+  footerBanner: {
+    id: 'ad-footer',
+    title: 'Unduh Laporan Tahunan Pelayanan Publik Indonesia 2026',
+    imageUrl: '',
+    targetUrl: 'https://asqi.or.id/',
+    badgeText: 'IKLAN MELAYANG',
+    enabled: false,
+  },
+  updatedAt: new Date().toISOString(),
+};
+
+// GET /api/global-ads
+app.get('/api/global-ads', (req, res) => {
+  const data = getStoreData();
+  const ads = data.globalAds || defaultGlobalAds;
+  res.json({ success: true, globalAds: ads });
+});
+
+// POST /api/global-ads
+app.post('/api/global-ads', (req, res) => {
+  try {
+    const { globalAds } = req.body;
+    if (!globalAds || typeof globalAds !== 'object') {
+      return res.status(400).json({ success: false, message: 'Data iklan tidak valid' });
+    }
+
+    const data = getStoreData();
+    const updated = {
+      ...globalAds,
+      updatedAt: new Date().toISOString(),
+    };
+    data.globalAds = updated;
+    saveStoreData(data);
+
+    // Sync to Firestore in background
+    setDoc(doc(db, 'settings', 'global_ads'), updated).catch((err) => {
+      console.error('Firestore global_ads save error:', err);
+    });
+
+    res.json({ success: true, globalAds: updated, message: 'Pengaturan iklan halaman depan berhasil diperbarui' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err?.message || 'Gagal menyimpan pengaturan iklan' });
+  }
+});
+
 // DEFAULT ABOUT ASQI SETTINGS
 const defaultAboutAsqi = {
   logoUrl: '/asqi-logo-about.svg',
@@ -350,6 +429,7 @@ app.post('/api/news', (req, res) => {
       isPopular: !!isPopular,
       isPremium: !!req.body.isPremium,
       tags: Array.isArray(tags) ? tags : [category],
+      articleAds: req.body.articleAds && typeof req.body.articleAds === 'object' ? req.body.articleAds : undefined,
     };
 
     data.articles = [newArticle, ...(data.articles || [])];
@@ -416,6 +496,7 @@ app.put('/api/news/:id', (req, res) => {
       isPopular: isPopular !== undefined ? !!isPopular : existing.isPopular,
       isPremium: req.body.isPremium !== undefined ? !!req.body.isPremium : existing.isPremium,
       tags: tags !== undefined ? (Array.isArray(tags) ? tags : [category]) : existing.tags,
+      articleAds: req.body.articleAds !== undefined ? req.body.articleAds : existing.articleAds,
     };
 
     data.articles[index] = updatedArticle;

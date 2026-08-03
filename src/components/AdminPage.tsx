@@ -27,10 +27,12 @@ import {
   Sliders,
   Menu,
   Globe,
+  Megaphone,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { NewsArticle, Infographic, DataboksItem, AdminUser, AdminRole, HeaderSettings, HeaderQuickLink } from '../types';
+import { NewsArticle, Infographic, DataboksItem, AdminUser, AdminRole, HeaderSettings, HeaderQuickLink, GlobalAdsSettings, AdBanner, ArticleAdsSettings } from '../types';
 import { initialData } from '../initialData';
 import { Logo } from './Logo';
 import { ImageUploadInput } from './ImageUploadInput';
@@ -90,7 +92,17 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   const [isSubmittingLogin, setIsSubmittingLogin] = useState(false);
 
   // Admin CMS Tabs
-  const [activeTab, setActiveTab] = useState<'articles' | 'header' | 'categories' | 'insight' | 'databoks' | 'about_asqi' | 'users' | 'system'>('articles');
+  const [activeTab, setActiveTab] = useState<'articles' | 'header' | 'categories' | 'insight' | 'databoks' | 'about_asqi' | 'ads' | 'users' | 'system'>('articles');
+
+  // Global Ads State
+  const [globalAds, setGlobalAds] = useState<GlobalAdsSettings>({
+    headerBanner: { id: 'ad-header', title: 'GIIAS 2026 - Pameran Otomotif Terbesar Indonesia', imageUrl: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&h=160&q=80', targetUrl: 'https://asqi.or.id/', badgeText: 'IKLAN SPONSOR', enabled: true },
+    feedMiddleBanner: { id: 'ad-feed', title: 'Layanan Sertifikasi Mutu & Akreditasi Pelayanan Publik ASQI 2026', imageUrl: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1200&h=200&q=80', targetUrl: 'https://asqi.or.id/', badgeText: 'INFO SPONSOR', enabled: true },
+    sidebarBanner1: { id: 'ad-side-1', title: 'Forum Manajemen Mutu Pelayanan BUMN & Korporasi 2026', imageUrl: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=600&h=400&q=80', targetUrl: 'https://asqi.or.id/', badgeText: 'SPONSORSHIP', enabled: true },
+    sidebarBanner2: { id: 'ad-side-2', title: 'Konsultasi Indeks Kepuasan Masyarakat (IKM) & LAKIP', imageUrl: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=600&h=400&q=80', targetUrl: 'https://asqi.or.id/', badgeText: 'IKLAN MITRA', enabled: true },
+    footerBanner: { id: 'ad-footer', title: 'Unduh Laporan Tahunan Pelayanan Publik Indonesia 2026', imageUrl: '', targetUrl: 'https://asqi.or.id/', badgeText: 'IKLAN MELAYANG', enabled: false },
+  });
+  const [isSavingAds, setIsSavingAds] = useState(false);
 
   // Tentang ASQI State
   const [aboutLogoUrl, setAboutLogoUrl] = useState('/asqi-logo-about.svg');
@@ -113,7 +125,44 @@ export const AdminPage: React.FC<AdminPageProps> = ({
         }
       })
       .catch(() => {});
+
+    fetch('/api/global-ads')
+      .then((r) => r.json())
+      .then((res) => {
+        if (res?.success && res.globalAds) {
+          setGlobalAds(res.globalAds);
+        }
+      })
+      .catch(() => {});
   }, []);
+
+  const handleSaveGlobalAds = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingAds(true);
+    setMsg(null);
+    try {
+      await setDoc(doc(db, 'settings', 'global_ads'), {
+        ...globalAds,
+        updatedAt: new Date().toISOString(),
+      }).catch(() => {});
+
+      const res = await fetch('/api/global-ads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ globalAds }),
+      }).then((r) => r.json());
+
+      if (res?.success) {
+        setMsg({ type: 'success', text: 'Pengaturan Iklan Halaman Depan & Sidebar berhasil disimpan dan disinkronkan secara live!' });
+      } else {
+        setMsg({ type: 'error', text: res?.message || 'Gagal menyimpan pengaturan iklan' });
+      }
+    } catch (err: any) {
+      setMsg({ type: 'error', text: err?.message || 'Terjadi kesalahan saat menyimpan iklan' });
+    } finally {
+      setIsSavingAds(false);
+    }
+  };
 
   const handleSaveAboutAsqi = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -199,6 +248,23 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   const [isPremium, setIsPremium] = useState(false);
   const [tags, setTags] = useState('');
   const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
+
+  // Per-article Ad states
+  const [topAdEnabled, setTopAdEnabled] = useState(false);
+  const [topAdTitle, setTopAdTitle] = useState('');
+  const [topAdImageUrl, setTopAdImageUrl] = useState('');
+  const [topAdTargetUrl, setTopAdTargetUrl] = useState('');
+  const [topAdBadge, setTopAdBadge] = useState('IKLAN');
+
+  const [middleAdEnabled, setMiddleAdEnabled] = useState(false);
+  const [middleAdTitle, setMiddleAdTitle] = useState('');
+  const [middleAdImageUrl, setMiddleAdImageUrl] = useState('');
+  const [middleAdTargetUrl, setMiddleAdTargetUrl] = useState('');
+
+  const [bottomAdEnabled, setBottomAdEnabled] = useState(false);
+  const [bottomAdTitle, setBottomAdTitle] = useState('');
+  const [bottomAdImageUrl, setBottomAdImageUrl] = useState('');
+  const [bottomAdTargetUrl, setBottomAdTargetUrl] = useState('');
 
   // Form states for Infographic & Databoks
   const [infoTitle, setInfoTitle] = useState('');
@@ -423,6 +489,35 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     }
 
     const articleId = editingArticleId || ('art-' + Date.now());
+    const articleAdsObj: ArticleAdsSettings = {
+      topAd: topAdEnabled ? {
+        id: 'top-' + articleId,
+        title: topAdTitle || 'Iklan Atas Berita',
+        imageUrl: topAdImageUrl,
+        targetUrl: topAdTargetUrl || 'https://asqi.or.id/',
+        badgeText: topAdBadge || 'IKLAN',
+        enabled: true,
+      } : undefined,
+      middleAd: middleAdEnabled ? {
+        id: 'mid-' + articleId,
+        title: middleAdTitle || 'Iklan Tengah Berita',
+        imageUrl: middleAdImageUrl,
+        targetUrl: middleAdTargetUrl || 'https://asqi.or.id/',
+        badgeText: 'INFO SPONSOR',
+        enabled: true,
+      } : undefined,
+      bottomAd: bottomAdEnabled ? {
+        id: 'bot-' + articleId,
+        title: bottomAdTitle || 'Iklan Bawah Berita',
+        imageUrl: bottomAdImageUrl,
+        targetUrl: bottomAdTargetUrl || 'https://asqi.or.id/',
+        badgeText: 'IKLAN MITRA',
+        enabled: true,
+      } : undefined,
+    };
+
+    const hasAnyArticleAd = topAdEnabled || middleAdEnabled || bottomAdEnabled;
+
     const fullArticle: NewsArticle = {
       id: articleId,
       title: title.trim(),
@@ -441,6 +536,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
       isPopular: !!isPopular,
       isPremium: !!isPremium,
       tags: tags ? tags.split(',').map((t) => t.trim()) : [category],
+      articleAds: hasAnyArticleAd ? articleAdsObj : undefined,
     };
 
     let firestoreSaved = false;
@@ -509,6 +605,42 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     setIsPopular(Boolean(article.isPopular));
     setIsPremium(Boolean(article.isPremium));
     setTags(article.tags ? article.tags.join(', ') : '');
+
+    // Load articleAds
+    if (article.articleAds) {
+      if (article.articleAds.topAd) {
+        setTopAdEnabled(!!article.articleAds.topAd.enabled);
+        setTopAdTitle(article.articleAds.topAd.title || '');
+        setTopAdImageUrl(article.articleAds.topAd.imageUrl || '');
+        setTopAdTargetUrl(article.articleAds.topAd.targetUrl || '');
+        setTopAdBadge(article.articleAds.topAd.badgeText || 'IKLAN');
+      } else {
+        setTopAdEnabled(false); setTopAdTitle(''); setTopAdImageUrl(''); setTopAdTargetUrl(''); setTopAdBadge('IKLAN');
+      }
+
+      if (article.articleAds.middleAd) {
+        setMiddleAdEnabled(!!article.articleAds.middleAd.enabled);
+        setMiddleAdTitle(article.articleAds.middleAd.title || '');
+        setMiddleAdImageUrl(article.articleAds.middleAd.imageUrl || '');
+        setMiddleAdTargetUrl(article.articleAds.middleAd.targetUrl || '');
+      } else {
+        setMiddleAdEnabled(false); setMiddleAdTitle(''); setMiddleAdImageUrl(''); setMiddleAdTargetUrl('');
+      }
+
+      if (article.articleAds.bottomAd) {
+        setBottomAdEnabled(!!article.articleAds.bottomAd.enabled);
+        setBottomAdTitle(article.articleAds.bottomAd.title || '');
+        setBottomAdImageUrl(article.articleAds.bottomAd.imageUrl || '');
+        setBottomAdTargetUrl(article.articleAds.bottomAd.targetUrl || '');
+      } else {
+        setBottomAdEnabled(false); setBottomAdTitle(''); setBottomAdImageUrl(''); setBottomAdTargetUrl('');
+      }
+    } else {
+      setTopAdEnabled(false); setTopAdTitle(''); setTopAdImageUrl(''); setTopAdTargetUrl(''); setTopAdBadge('IKLAN');
+      setMiddleAdEnabled(false); setMiddleAdTitle(''); setMiddleAdImageUrl(''); setMiddleAdTargetUrl('');
+      setBottomAdEnabled(false); setBottomAdTitle(''); setBottomAdImageUrl(''); setBottomAdTargetUrl('');
+    }
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -543,6 +675,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     setIsPopular(false);
     setIsPremium(false);
     setTags('');
+    setTopAdEnabled(false); setTopAdTitle(''); setTopAdImageUrl(''); setTopAdTargetUrl(''); setTopAdBadge('IKLAN');
+    setMiddleAdEnabled(false); setMiddleAdTitle(''); setMiddleAdImageUrl(''); setMiddleAdTargetUrl('');
+    setBottomAdEnabled(false); setBottomAdTitle(''); setBottomAdImageUrl(''); setBottomAdTargetUrl('');
   };
 
   const handleAddInfographic = async (e: React.FormEvent) => {
@@ -1132,6 +1267,29 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                 </button>
               )}
 
+              {(user.role === 'superadmin' || user.role === 'editor') && (
+                <button
+                  onClick={() => setActiveTab('ads')}
+                  style={{
+                    backgroundColor: activeTab === 'ads' ? '#001e58' : '#0f172a',
+                    color: '#ffffff',
+                    border: `1px solid ${activeTab === 'ads' ? '#38bdf8' : '#334155'}`,
+                    padding: '10px 14px',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    textAlign: 'left',
+                    width: '100%',
+                  }}
+                >
+                  <Megaphone size={16} style={{ color: activeTab === 'ads' ? '#ffffff' : '#f59e0b' }} /> Kelola Iklan Depan
+                </button>
+              )}
+
               {user.role === 'superadmin' && (
                 <button
                   onClick={() => setActiveTab('users')}
@@ -1408,6 +1566,121 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                     <input type="checkbox" checked={isPremium} onChange={(e) => setIsPremium(e.target.checked)} />
                     🔒 Berita Akses Khusus (Berbayar Akses Khusus)
                   </label>
+                </div>
+
+                {/* Section Iklan Spesifik Berita (Per-Article Ads) */}
+                <div style={{ gridColumn: '1 / -1', backgroundColor: '#0f172a', padding: '16px', borderRadius: '8px', border: '1px solid #3b82f6', marginTop: '16px', marginBottom: '12px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 800, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <Megaphone size={16} /> Isian Iklan Spesifik Berita Ini (Posisi Strategis &amp; Terlihat)
+                  </div>
+                  <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '16px', marginTop: 0 }}>
+                    Aktifkan &amp; isi iklan khusus sponsor yang akan tampil secara eksklusif di halaman berita ini (Atas, Tengah, dan Bawah Paragraf).
+                  </p>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                    {/* 1. Iklan Atas Berita */}
+                    <div style={{ backgroundColor: '#1e293b', padding: '12px', borderRadius: '6px', border: '1px solid #334155' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '13px', color: '#f8fafc', marginBottom: '10px' }}>
+                        <input type="checkbox" checked={topAdEnabled} onChange={(e) => setTopAdEnabled(e.target.checked)} style={{ accentColor: '#38bdf8' }} />
+                        1. Iklan Atas Berita (Top Banner)
+                      </label>
+                      {topAdEnabled && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          <input
+                            type="text"
+                            placeholder="Judul / Sponsor (mis: GIIAS 2026)"
+                            value={topAdTitle}
+                            onChange={(e) => setTopAdTitle(e.target.value)}
+                            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#ffffff', fontSize: '12px' }}
+                          />
+                          <ImageUploadInput
+                            label="URL Gambar Iklan Atas"
+                            value={topAdImageUrl}
+                            onChange={setTopAdImageUrl}
+                            helperText="Banner horizontal atas"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Target Link URL (mis: https://sponsor.com)"
+                            value={topAdTargetUrl}
+                            onChange={(e) => setTopAdTargetUrl(e.target.value)}
+                            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#ffffff', fontSize: '12px' }}
+                          />
+                          <input
+                            type="text"
+                            placeholder="Label Badge (default: IKLAN)"
+                            value={topAdBadge}
+                            onChange={(e) => setTopAdBadge(e.target.value)}
+                            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#ffffff', fontSize: '12px' }}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 2. Iklan Tengah Berita */}
+                    <div style={{ backgroundColor: '#1e293b', padding: '12px', borderRadius: '6px', border: '1px solid #334155' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '13px', color: '#f8fafc', marginBottom: '10px' }}>
+                        <input type="checkbox" checked={middleAdEnabled} onChange={(e) => setMiddleAdEnabled(e.target.checked)} style={{ accentColor: '#38bdf8' }} />
+                        2. Iklan Tengah Berita (In-Article)
+                      </label>
+                      {middleAdEnabled && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          <input
+                            type="text"
+                            placeholder="Judul / Sponsor"
+                            value={middleAdTitle}
+                            onChange={(e) => setMiddleAdTitle(e.target.value)}
+                            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#ffffff', fontSize: '12px' }}
+                          />
+                          <ImageUploadInput
+                            label="URL Gambar Iklan Tengah"
+                            value={middleAdImageUrl}
+                            onChange={setMiddleAdImageUrl}
+                            helperText="Tersisip di pertengahan artikel"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Target Link URL"
+                            value={middleAdTargetUrl}
+                            onChange={(e) => setMiddleAdTargetUrl(e.target.value)}
+                            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#ffffff', fontSize: '12px' }}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 3. Iklan Bawah Berita */}
+                    <div style={{ backgroundColor: '#1e293b', padding: '12px', borderRadius: '6px', border: '1px solid #334155' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '13px', color: '#f8fafc', marginBottom: '10px' }}>
+                        <input type="checkbox" checked={bottomAdEnabled} onChange={(e) => setBottomAdEnabled(e.target.checked)} style={{ accentColor: '#38bdf8' }} />
+                        3. Iklan Bawah Berita (Bottom Banner)
+                      </label>
+                      {bottomAdEnabled && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          <input
+                            type="text"
+                            placeholder="Judul / Sponsor"
+                            value={bottomAdTitle}
+                            onChange={(e) => setBottomAdTitle(e.target.value)}
+                            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#ffffff', fontSize: '12px' }}
+                          />
+                          <ImageUploadInput
+                            label="URL Gambar Iklan Bawah"
+                            value={bottomAdImageUrl}
+                            onChange={setBottomAdImageUrl}
+                            helperText="Banner penutup akhir artikel"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Target Link URL"
+                            value={bottomAdTargetUrl}
+                            onChange={(e) => setBottomAdTargetUrl(e.target.value)}
+                            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#ffffff', fontSize: '12px' }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '12px', marginTop: '12px' }}>
@@ -2107,6 +2380,351 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                   }}
                 >
                   {isSavingAbout ? 'Menyimpan...' : 'Simpan Pengaturan tentang ASQI'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* TAB 8: KELOLA IKLAN HALAMAN DEPAN & SIDEBAR */}
+        {activeTab === 'ads' && (user.role === 'superadmin' || user.role === 'editor') && (
+          <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '24px', border: '1px solid #334155' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 800, marginTop: 0, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px', color: '#f8fafc' }}>
+              <Megaphone size={20} style={{ color: '#f59e0b' }} /> Kelola Iklan Halaman Depan &amp; Sidebar Utama
+            </h3>
+            <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '24px', lineHeight: 1.5 }}>
+              Atur posisi banner iklan global yang tampil di halaman depan portal, bagian tengah feed berita, sidebar samping, dan banner melayang. Pengaturan ini disinkronkan secara otomatis.
+            </p>
+
+            <form onSubmit={handleSaveGlobalAds} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              {/* 1. Header Banner Top */}
+              <div style={{ backgroundColor: '#0f172a', padding: '20px', borderRadius: '8px', border: '1px solid #334155' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <div style={{ fontSize: '15px', fontWeight: 800, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <ImageIcon size={18} /> 1. Banner Header Atas (Top Leaderboard)
+                  </div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 700, color: globalAds.headerBanner.enabled ? '#34d399' : '#94a3b8' }}>
+                    <input
+                      type="checkbox"
+                      checked={globalAds.headerBanner.enabled}
+                      onChange={(e) => setGlobalAds({
+                        ...globalAds,
+                        headerBanner: { ...globalAds.headerBanner, enabled: e.target.checked }
+                      })}
+                      style={{ width: '18px', height: '18px', accentColor: '#10b981' }}
+                    />
+                    {globalAds.headerBanner.enabled ? 'AKTIF 🟢' : 'NONAKTIF 🔴'}
+                  </label>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>Judul / Sponsor</label>
+                    <input
+                      type="text"
+                      value={globalAds.headerBanner.title || ''}
+                      onChange={(e) => setGlobalAds({
+                        ...globalAds,
+                        headerBanner: { ...globalAds.headerBanner, title: e.target.value }
+                      })}
+                      placeholder="GIIAS 2026 - Pameran Otomotif Terbesar"
+                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #475569', backgroundColor: '#1e293b', color: '#ffffff', fontSize: '13px' }}
+                    />
+                  </div>
+
+                  <div>
+                    <ImageUploadInput
+                      label="URL Gambar Banner Header"
+                      value={globalAds.headerBanner.imageUrl || ''}
+                      onChange={(url) => setGlobalAds({
+                        ...globalAds,
+                        headerBanner: { ...globalAds.headerBanner, imageUrl: url }
+                      })}
+                      helperText="Banner mendatar (rekomendasi: 1200x160 px)"
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>Target Link URL</label>
+                    <input
+                      type="text"
+                      value={globalAds.headerBanner.targetUrl || ''}
+                      onChange={(e) => setGlobalAds({
+                        ...globalAds,
+                        headerBanner: { ...globalAds.headerBanner, targetUrl: e.target.value }
+                      })}
+                      placeholder="https://asqi.or.id/"
+                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #475569', backgroundColor: '#1e293b', color: '#ffffff', fontSize: '13px' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>Badge Label</label>
+                    <input
+                      type="text"
+                      value={globalAds.headerBanner.badgeText || ''}
+                      onChange={(e) => setGlobalAds({
+                        ...globalAds,
+                        headerBanner: { ...globalAds.headerBanner, badgeText: e.target.value }
+                      })}
+                      placeholder="IKLAN SPONSOR"
+                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #475569', backgroundColor: '#1e293b', color: '#ffffff', fontSize: '13px' }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Feed Middle Banner */}
+              <div style={{ backgroundColor: '#0f172a', padding: '20px', borderRadius: '8px', border: '1px solid #334155' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <div style={{ fontSize: '15px', fontWeight: 800, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <ImageIcon size={18} /> 2. Banner Tengah Feed Berita Utama (In-Feed)
+                  </div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 700, color: globalAds.feedMiddleBanner.enabled ? '#34d399' : '#94a3b8' }}>
+                    <input
+                      type="checkbox"
+                      checked={globalAds.feedMiddleBanner.enabled}
+                      onChange={(e) => setGlobalAds({
+                        ...globalAds,
+                        feedMiddleBanner: { ...globalAds.feedMiddleBanner, enabled: e.target.checked }
+                      })}
+                      style={{ width: '18px', height: '18px', accentColor: '#10b981' }}
+                    />
+                    {globalAds.feedMiddleBanner.enabled ? 'AKTIF 🟢' : 'NONAKTIF 🔴'}
+                  </label>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>Judul / Sponsor</label>
+                    <input
+                      type="text"
+                      value={globalAds.feedMiddleBanner.title || ''}
+                      onChange={(e) => setGlobalAds({
+                        ...globalAds,
+                        feedMiddleBanner: { ...globalAds.feedMiddleBanner, title: e.target.value }
+                      })}
+                      placeholder="Sertifikasi Mutu ASQI 2026"
+                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #475569', backgroundColor: '#1e293b', color: '#ffffff', fontSize: '13px' }}
+                    />
+                  </div>
+
+                  <div>
+                    <ImageUploadInput
+                      label="URL Gambar Banner Feed"
+                      value={globalAds.feedMiddleBanner.imageUrl || ''}
+                      onChange={(url) => setGlobalAds({
+                        ...globalAds,
+                        feedMiddleBanner: { ...globalAds.feedMiddleBanner, imageUrl: url }
+                      })}
+                      helperText="Tampil di sela-sela daftar berita utama"
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>Target Link URL</label>
+                    <input
+                      type="text"
+                      value={globalAds.feedMiddleBanner.targetUrl || ''}
+                      onChange={(e) => setGlobalAds({
+                        ...globalAds,
+                        feedMiddleBanner: { ...globalAds.feedMiddleBanner, targetUrl: e.target.value }
+                      })}
+                      placeholder="https://asqi.or.id/"
+                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #475569', backgroundColor: '#1e293b', color: '#ffffff', fontSize: '13px' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>Badge Label</label>
+                    <input
+                      type="text"
+                      value={globalAds.feedMiddleBanner.badgeText || ''}
+                      onChange={(e) => setGlobalAds({
+                        ...globalAds,
+                        feedMiddleBanner: { ...globalAds.feedMiddleBanner, badgeText: e.target.value }
+                      })}
+                      placeholder="INFO SPONSOR"
+                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #475569', backgroundColor: '#1e293b', color: '#ffffff', fontSize: '13px' }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Sidebar Banner 1 */}
+              <div style={{ backgroundColor: '#0f172a', padding: '20px', borderRadius: '8px', border: '1px solid #334155' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <div style={{ fontSize: '15px', fontWeight: 800, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <ImageIcon size={18} /> 3. Banner Sidebar Kanan Utama (Rectangular 1)
+                  </div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 700, color: globalAds.sidebarBanner1.enabled ? '#34d399' : '#94a3b8' }}>
+                    <input
+                      type="checkbox"
+                      checked={globalAds.sidebarBanner1.enabled}
+                      onChange={(e) => setGlobalAds({
+                        ...globalAds,
+                        sidebarBanner1: { ...globalAds.sidebarBanner1, enabled: e.target.checked }
+                      })}
+                      style={{ width: '18px', height: '18px', accentColor: '#10b981' }}
+                    />
+                    {globalAds.sidebarBanner1.enabled ? 'AKTIF 🟢' : 'NONAKTIF 🔴'}
+                  </label>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>Judul / Sponsor</label>
+                    <input
+                      type="text"
+                      value={globalAds.sidebarBanner1.title || ''}
+                      onChange={(e) => setGlobalAds({
+                        ...globalAds,
+                        sidebarBanner1: { ...globalAds.sidebarBanner1, title: e.target.value }
+                      })}
+                      placeholder="Forum Manajemen Mutu BUMN"
+                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #475569', backgroundColor: '#1e293b', color: '#ffffff', fontSize: '13px' }}
+                    />
+                  </div>
+
+                  <div>
+                    <ImageUploadInput
+                      label="URL Gambar Sidebar 1"
+                      value={globalAds.sidebarBanner1.imageUrl || ''}
+                      onChange={(url) => setGlobalAds({
+                        ...globalAds,
+                        sidebarBanner1: { ...globalAds.sidebarBanner1, imageUrl: url }
+                      })}
+                      helperText="Banner persegi / medium rectangle (mis: 600x400 px)"
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>Target Link URL</label>
+                    <input
+                      type="text"
+                      value={globalAds.sidebarBanner1.targetUrl || ''}
+                      onChange={(e) => setGlobalAds({
+                        ...globalAds,
+                        sidebarBanner1: { ...globalAds.sidebarBanner1, targetUrl: e.target.value }
+                      })}
+                      placeholder="https://asqi.or.id/"
+                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #475569', backgroundColor: '#1e293b', color: '#ffffff', fontSize: '13px' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>Badge Label</label>
+                    <input
+                      type="text"
+                      value={globalAds.sidebarBanner1.badgeText || ''}
+                      onChange={(e) => setGlobalAds({
+                        ...globalAds,
+                        sidebarBanner1: { ...globalAds.sidebarBanner1, badgeText: e.target.value }
+                      })}
+                      placeholder="SPONSORSHIP"
+                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #475569', backgroundColor: '#1e293b', color: '#ffffff', fontSize: '13px' }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. Sidebar Banner 2 */}
+              <div style={{ backgroundColor: '#0f172a', padding: '20px', borderRadius: '8px', border: '1px solid #334155' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <div style={{ fontSize: '15px', fontWeight: 800, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <ImageIcon size={18} /> 4. Banner Sidebar Kanan Sekunder (Rectangular 2)
+                  </div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 700, color: globalAds.sidebarBanner2.enabled ? '#34d399' : '#94a3b8' }}>
+                    <input
+                      type="checkbox"
+                      checked={globalAds.sidebarBanner2.enabled}
+                      onChange={(e) => setGlobalAds({
+                        ...globalAds,
+                        sidebarBanner2: { ...globalAds.sidebarBanner2, enabled: e.target.checked }
+                      })}
+                      style={{ width: '18px', height: '18px', accentColor: '#10b981' }}
+                    />
+                    {globalAds.sidebarBanner2.enabled ? 'AKTIF 🟢' : 'NONAKTIF 🔴'}
+                  </label>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>Judul / Sponsor</label>
+                    <input
+                      type="text"
+                      value={globalAds.sidebarBanner2.title || ''}
+                      onChange={(e) => setGlobalAds({
+                        ...globalAds,
+                        sidebarBanner2: { ...globalAds.sidebarBanner2, title: e.target.value }
+                      })}
+                      placeholder="Konsultasi Indeks Kepuasan Masyarakat"
+                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #475569', backgroundColor: '#1e293b', color: '#ffffff', fontSize: '13px' }}
+                    />
+                  </div>
+
+                  <div>
+                    <ImageUploadInput
+                      label="URL Gambar Sidebar 2"
+                      value={globalAds.sidebarBanner2.imageUrl || ''}
+                      onChange={(url) => setGlobalAds({
+                        ...globalAds,
+                        sidebarBanner2: { ...globalAds.sidebarBanner2, imageUrl: url }
+                      })}
+                      helperText="Banner posisi bawah sidebar"
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>Target Link URL</label>
+                    <input
+                      type="text"
+                      value={globalAds.sidebarBanner2.targetUrl || ''}
+                      onChange={(e) => setGlobalAds({
+                        ...globalAds,
+                        sidebarBanner2: { ...globalAds.sidebarBanner2, targetUrl: e.target.value }
+                      })}
+                      placeholder="https://asqi.or.id/"
+                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #475569', backgroundColor: '#1e293b', color: '#ffffff', fontSize: '13px' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>Badge Label</label>
+                    <input
+                      type="text"
+                      value={globalAds.sidebarBanner2.badgeText || ''}
+                      onChange={(e) => setGlobalAds({
+                        ...globalAds,
+                        sidebarBanner2: { ...globalAds.sidebarBanner2, badgeText: e.target.value }
+                      })}
+                      placeholder="IKLAN MITRA"
+                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #475569', backgroundColor: '#1e293b', color: '#ffffff', fontSize: '13px' }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
+                <button
+                  type="submit"
+                  disabled={isSavingAds}
+                  style={{
+                    backgroundColor: '#001e58',
+                    color: '#ffffff',
+                    border: 'none',
+                    padding: '12px 28px',
+                    borderRadius: '8px',
+                    fontSize: '15px',
+                    fontWeight: 700,
+                    cursor: isSavingAds ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.2)',
+                  }}
+                >
+                  <CheckCircle size={18} /> {isSavingAds ? 'Menyimpan...' : 'Simpan Semua Pengaturan Iklan Halaman Depan'}
                 </button>
               </div>
             </form>

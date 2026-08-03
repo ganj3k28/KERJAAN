@@ -1,13 +1,15 @@
 import React from 'react';
 import { Search, User, Menu, Crown } from 'lucide-react';
 import { Logo } from './Logo';
-import { HeaderSettings, HeaderQuickLink, SubscriberUser } from '../types';
+import { HeaderSettings, HeaderQuickLink, SubscriberUser, AdBanner } from '../types';
+import { AdBox } from './AdBox';
 
 interface HeaderProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   onSearchSubmit: (e: React.FormEvent) => void;
   headerSettings?: HeaderSettings;
+  headerAd?: AdBanner;
   onSelectCategory?: (category: string) => void;
   onOpenLoginModal?: () => void;
   onOpenSubscribeModal?: () => void;
@@ -35,6 +37,7 @@ export const Header: React.FC<HeaderProps> = ({
   setSearchQuery,
   onSearchSubmit,
   headerSettings,
+  headerAd,
   onSelectCategory,
   onOpenLoginModal,
   onOpenSubscribeModal,
@@ -67,6 +70,14 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="top-header" style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#ffffff' }}>
+      {/* Top Leaderboard Banner Ad */}
+      {headerAd?.enabled && (
+        <div style={{ backgroundColor: '#f8fafc', padding: '8px 16px', borderBottom: '1px solid #e2e8f0' }}>
+          <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+            <AdBox ad={headerAd} placement="header" />
+          </div>
+        </div>
+      )}
       <div
         className="top-header-container"
         style={{
