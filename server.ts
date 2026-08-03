@@ -285,7 +285,7 @@ app.post('/api/news', (req, res) => {
     }
 
     const newArticle: NewsArticle = {
-      id: 'art-' + Date.now(),
+      id: req.body.id ? String(req.body.id).trim() : ('art-' + Date.now()),
       title: String(title).trim(),
       category: String(category).trim(),
       publishedAt: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase() + ', ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
@@ -779,7 +779,126 @@ app.get('/api/export-sql', (req, res) => {
   res.send(sql);
 });
 
-// Image endpoint for OpenGraph / WhatsApp / Social Media preview
+async function findArticleById(articleId: string): Promise<NewsArticle | null> {
+  if (!articleId) return null;
+  const targetId = articleId.toLowerCase().trim();
+
+  const data = getStoreData();
+  const articles: NewsArticle[] = data.articles || [];
+
+  // 1. Search in local store memory (articles, carousel, infographics, databoks)
+  let found =
+    articles.find((a) => a && a.id && (a.id.toLowerCase().trim() === targetId || a.id.toLowerCase().trim().includes(targetId) || targetId.includes(a.id.toLowerCase().trim()))) ||
+    (data.carousel || []).find((a: any) => a && a.id && (a.id.toLowerCase().trim() === targetId || a.id.toLowerCase().trim().includes(targetId) || targetId.includes(a.id.toLowerCase().trim()))) ||
+    (data.infographics || []).find((a: any) => a && a.id && (a.id.toLowerCase().trim() === targetId || a.id.toLowerCase().trim().includes(targetId) || targetId.includes(a.id.toLowerCase().trim()))) ||
+    (data.databoks || []).find((a: any) => a && a.id && (a.id.toLowerCase().trim() === targetId || a.id.toLowerCase().trim().includes(targetId) || targetId.includes(a.id.toLowerCase().trim())));
+
+  if (found) return found as NewsArticle;
+
+  // 2. Direct lookup in Firestore Cloud Database by document ID
+  try {
+    const articleDoc = await getDoc(doc(db, 'articles', articleId));
+    if (articleDoc.exists()) {
+      const artData = articleDoc.data() as NewsArticle;
+      if (artData) {
+        data.articles = [artData, ...articles.filter((x) => x.id !== artData.id)];
+        saveStoreData(data);
+        return artData;
+      }
+    }
+  } catch (err) {
+    console.error('Firestore getDoc error for article:', err);
+  }
+
+  // 3. Scan all docs from Firestore if getDoc with exact ID failed
+  try {
+    const snap = await getDocs(collection(db, 'articles'));
+    if (!snap.empty) {
+      const fetched = snap.docs.map((d) => d.data() as NewsArticle);
+      data.articles = fetched;
+      saveStoreData(data);
+      const match = fetched.find((a) => a && a.id && (a.id.toLowerCase().trim() === targetId || a.id.toLowerCase().trim().includes(targetId) || targetId.includes(a.id.toLowerCase().trim())));
+      if (match) return match;
+    }
+  } catch (err) {
+    console.error('Firestore getDocs scan error for article:', err);
+  }
+
+  return null;
+}
+
+function getBestArticleImage(article: NewsArticle, protocol: string, host: string): { url: string; mimeType: string } {
+  let imgCandidate = (article.image || '').trim();
+
+  // Fallback 1: middleImage
+  if (!imgCandidate && article.middleImage) {
+    imgCandidate = article.middleImage.trim();
+  }
+
+  // Fallback 2: galleryImages
+  if (!imgCandidate && Array.isArray(article.galleryImages) && article.galleryImages.length > 0) {
+    const firstGal = article.galleryImages[0];
+    const galUrl = typeof firstGal === 'string' ? firstGal : (firstGal?.url || '');
+    if (galUrl) imgCandidate = galUrl.trim();
+  }
+
+  // Fallback 3: search inside article.content for <img src="..."> or image URL
+  if (!imgCandidate && article.content) {
+    const imgMatch = article.content.match(/<img[^>]+src=["']([^"']+)["']/i);
+    if (imgMatch && imgMatch[1]) {
+      imgCandidate = imgMatch[1].trim();
+    } else {
+      const urlMatch = article.content.match(/(https?:\/\/[^\s"'<>]+?\.(?:jpg|jpeg|png|webp|gif))/i);
+      if (urlMatch && urlMatch[1]) {
+        imgCandidate = urlMatch[1].trim();
+      }
+    }
+  }
+
+  if (!imgCandidate) {
+    return {
+      url: `${protocol}://${host}/api/news/${article.id}/image.jpg`,
+      mimeType: 'image/jpeg',
+    };
+  }
+
+  // Handle Base64 data URI
+  if (imgCandidate.startsWith('data:image/')) {
+    let mime = 'image/jpeg';
+    if (imgCandidate.includes('data:image/png')) mime = 'image/png';
+    else if (imgCandidate.includes('data:image/webp')) mime = 'image/webp';
+    return {
+      url: `${protocol}://${host}/api/news/${article.id}/image.jpg`,
+      mimeType: mime,
+    };
+  }
+
+  // Optimize Unsplash images for high resolution Facebook OG preview (1200x630)
+  if (imgCandidate.includes('images.unsplash.com')) {
+    imgCandidate = imgCandidate.replace(/w=\d+/, 'w=1200').replace(/h=\d+/, 'h=630');
+    if (!imgCandidate.includes('w=1200')) {
+      imgCandidate += (imgCandidate.includes('?') ? '&' : '?') + 'w=1200&h=630&fit=crop';
+    }
+  }
+
+  // Handle HTTP/HTTPS URLs
+  if (imgCandidate.startsWith('http://') || imgCandidate.startsWith('https://')) {
+    let mime = 'image/jpeg';
+    if (imgCandidate.toLowerCase().includes('.png')) mime = 'image/png';
+    else if (imgCandidate.toLowerCase().includes('.webp')) mime = 'image/webp';
+    else if (imgCandidate.toLowerCase().includes('.gif')) mime = 'image/gif';
+    return { url: imgCandidate, mimeType: mime };
+  }
+
+  // Handle relative URLs
+  const absoluteUrl = `${protocol}://${host}${imgCandidate.startsWith('/') ? '' : '/'}${imgCandidate}`;
+  let mime = 'image/jpeg';
+  if (imgCandidate.toLowerCase().includes('.png')) mime = 'image/png';
+  else if (imgCandidate.toLowerCase().includes('.webp')) mime = 'image/webp';
+  return { url: absoluteUrl, mimeType: mime };
+}
+
+// Image endpoint for OpenGraph / WhatsApp / Facebook Social Media preview
 app.get([
   '/api/news/:id/image', 
   '/api/news/:id/image.jpg', 
@@ -788,31 +907,20 @@ app.get([
   '/api/articles/:id/image.jpg'
 ], async (req, res) => {
   try {
-    const rawId = req.params.id;
+    const rawId = req.params.id || '';
     const articleId = rawId.replace(/\.(jpg|png|webp|jpeg)$/i, '');
-    const data = getStoreData();
-    const articles: NewsArticle[] = data.articles || [];
-    let article =
-      articles.find((a) => a.id.toLowerCase() === articleId.toLowerCase()) ||
-      articles.find((a) => a.id.toLowerCase().includes(articleId.toLowerCase()));
 
-    // Fallback to Firestore if not found in local store memory
+    const article = await findArticleById(articleId);
+
     if (!article) {
-      try {
-        const articleDoc = await getDoc(doc(db, 'articles', articleId));
-        if (articleDoc.exists()) {
-          article = articleDoc.data() as NewsArticle;
-        }
-      } catch (err) {
-        console.error('Error fetching article for image endpoint:', err);
-      }
-    }
-
-    if (!article || !article.image) {
       return res.redirect('https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=1200&h=630&q=80');
     }
 
-    const img = article.image.trim();
+    const protocol = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'https';
+    const host = req.get('host') || 'asqinews.com';
+    const { url: bestImgUrl } = getBestArticleImage(article, protocol, host);
+
+    let img = (article.image || article.middleImage || bestImgUrl || '').trim();
 
     // Case 1: Base64 data URI (uploaded via Admin)
     if (img.startsWith('data:image/')) {
@@ -827,7 +935,12 @@ app.get([
       }
     }
 
-    // Case 2: External HTTP/HTTPS URL
+    // Case 2: Unsplash image formatting
+    if (img.includes('images.unsplash.com')) {
+      img = img.replace(/w=\d+/, 'w=1200').replace(/h=\d+/, 'h=630');
+    }
+
+    // Case 3: External HTTP/HTTPS URL
     if (img.startsWith('http://') || img.startsWith('https://')) {
       try {
         const response = await fetch(img, {
@@ -850,9 +963,7 @@ app.get([
       return res.redirect(img);
     }
 
-    // Case 3: Relative path
-    const protocol = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'https';
-    const host = req.get('host') || 'asqinews.com';
+    // Case 4: Relative path
     const fullImgUrl = `${protocol}://${host}${img.startsWith('/') ? '' : '/'}${img}`;
     return res.redirect(fullImgUrl);
   } catch (err) {
@@ -874,7 +985,6 @@ function escapeHtmlAttr(str: string): string {
 
 function setMetaTag(html: string, attrName: string, attrVal: string, contentVal: string): string {
   const escapedContent = escapeHtmlAttr(contentVal);
-  // Match <meta property="og:title" ...> or <meta name="title" ...> without /g flag
   const regex = new RegExp(`<meta\\s+[^>]*?${attrName}=["']${attrVal}["'][^>]*?>`, 'i');
   
   if (regex.test(html)) {
@@ -901,41 +1011,7 @@ async function injectMetaTags(html: string, req: express.Request): Promise<strin
     }
 
     if (articleId) {
-      const data = getStoreData();
-      let articles: NewsArticle[] = data.articles || [];
-      let article = articles.find(
-        (a) =>
-          a.id.toLowerCase() === articleId.toLowerCase() ||
-          a.id.toLowerCase().includes(articleId.toLowerCase()) ||
-          articleId.toLowerCase().includes(a.id.toLowerCase())
-      );
-
-      // Fetch from Firestore if not in local memory/store
-      if (!article) {
-        try {
-          const articleDoc = await getDoc(doc(db, 'articles', articleId));
-          if (articleDoc.exists()) {
-            article = articleDoc.data() as NewsArticle;
-          } else {
-            const snap = await getDocs(collection(db, 'articles'));
-            if (!snap.empty) {
-              const fetched = snap.docs.map((d) => d.data() as NewsArticle);
-              if (fetched.length > 0) {
-                data.articles = fetched;
-                saveStoreData(data);
-                article = fetched.find(
-                  (a) =>
-                    a.id.toLowerCase() === articleId.toLowerCase() ||
-                    a.id.toLowerCase().includes(articleId.toLowerCase()) ||
-                    articleId.toLowerCase().includes(a.id.toLowerCase())
-                );
-              }
-            }
-          }
-        } catch (err) {
-          console.error('Error fetching article from Firestore for meta tags:', err);
-        }
-      }
+      const article = await findArticleById(articleId);
 
       if (article) {
         const protocol = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'https';
@@ -948,26 +1024,7 @@ async function injectMetaTags(html: string, req: express.Request): Promise<strin
           rawDesc = rawDesc.substring(0, 197) + '...';
         }
 
-        let cleanImg = article.image ? article.image.trim() : '';
-        let imgMimeType = 'image/jpeg';
-
-        if (cleanImg.startsWith('http://') || cleanImg.startsWith('https://')) {
-          if (cleanImg.toLowerCase().includes('.png')) imgMimeType = 'image/png';
-          else if (cleanImg.toLowerCase().includes('.webp')) imgMimeType = 'image/webp';
-          else if (cleanImg.toLowerCase().includes('.gif')) imgMimeType = 'image/gif';
-          else imgMimeType = 'image/jpeg';
-        } else if (cleanImg.startsWith('data:image/')) {
-          if (cleanImg.includes('data:image/png')) imgMimeType = 'image/png';
-          else if (cleanImg.includes('data:image/webp')) imgMimeType = 'image/webp';
-          cleanImg = `${protocol}://${host}/api/news/${article.id}/image.jpg`;
-        } else if (cleanImg && !cleanImg.toLowerCase().endsWith('.svg')) {
-          cleanImg = `${protocol}://${host}${cleanImg.startsWith('/') ? '' : '/'}${cleanImg}`;
-          if (cleanImg.toLowerCase().includes('.png')) imgMimeType = 'image/png';
-          else imgMimeType = 'image/jpeg';
-        } else {
-          cleanImg = `${protocol}://${host}/api/news/${article.id}/image.jpg`;
-          imgMimeType = 'image/jpeg';
-        }
+        const { url: cleanImg, mimeType: imgMimeType } = getBestArticleImage(article, protocol, host);
 
         const escTitle = escapeHtmlAttr(pageTitle);
         const escArtTitle = escapeHtmlAttr(article.title);
