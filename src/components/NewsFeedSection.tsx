@@ -32,7 +32,7 @@ export const NewsFeedSection: React.FC<NewsFeedSectionProps> = ({
             ? `Hasil Pencarian: "${searchQuery}"`
             : !isMainView
             ? `Kategori: ${activeCategory}`
-            : 'Berita Terbaru Lainnya'}
+            : 'Berita Terbaru'}
         </h3>
         {isFiltered ? (
           <button

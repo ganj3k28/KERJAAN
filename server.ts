@@ -125,10 +125,17 @@ async function syncFromFirestore() {
     }
 
     const carousel = articles.filter((a) => a.isFeatured);
+    let carouselSlides = carousel.length > 0 ? carousel : articles;
+    if (carouselSlides.length < 5) {
+      const existingIds = new Set(carouselSlides.map((a) => a.id));
+      const extra = articles.filter((a) => !existingIds.has(a.id));
+      carouselSlides = [...carouselSlides, ...extra];
+    }
+    carouselSlides = carouselSlides.slice(0, 5);
 
     const store = {
       articles,
-      carousel: carousel.length > 0 ? carousel : articles.slice(0, 3),
+      carousel: carouselSlides,
       infographics,
       databoks,
       videos: initialData.videos,

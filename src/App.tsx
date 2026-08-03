@@ -227,8 +227,14 @@ export default function App() {
         try { localStorage.setItem('asqi_articles', JSON.stringify(resNews.articles)); } catch {}
       }
       if (resCarousel?.success && Array.isArray(resCarousel.slides)) {
-        setCarouselSlides(resCarousel.slides);
-        try { localStorage.setItem('asqi_carousel', JSON.stringify(resCarousel.slides)); } catch {}
+        let slides = resCarousel.slides;
+        if (slides.length < 5 && resNews?.success && Array.isArray(resNews.articles)) {
+          const existingIds = new Set(slides.map((s: any) => s.id));
+          const extra = resNews.articles.filter((a: any) => !existingIds.has(a.id));
+          slides = [...slides, ...extra];
+        }
+        setCarouselSlides(slides.slice(0, 5));
+        try { localStorage.setItem('asqi_carousel', JSON.stringify(slides.slice(0, 5))); } catch {}
       }
       if (resInfo?.success && Array.isArray(resInfo.infographics)) {
         setInfographics(resInfo.infographics);
@@ -305,9 +311,13 @@ export default function App() {
           const arts = snapshot.docs.map((d) => d.data() as NewsArticle);
           setAllArticles(arts);
           const featured = arts.filter((a) => a.isFeatured);
-          if (featured.length > 0) {
-            setCarouselSlides(featured);
+          let slides = featured.length > 0 ? featured : arts;
+          if (slides.length < 5) {
+            const existingIds = new Set(slides.map((a) => a.id));
+            const extra = arts.filter((a) => !existingIds.has(a.id));
+            slides = [...slides, ...extra];
           }
+          setCarouselSlides(slides.slice(0, 5));
         }
       });
 
@@ -819,14 +829,6 @@ export default function App() {
             <CarouselSection
               slides={carouselSlides}
               onArticleClick={(article) => handleOpenArticle(article)}
-            />
-          )}
-
-          {/* Infografik Terbaru */}
-          {(activeCategory === 'Beranda' || activeCategory === 'Berita Terbaru' || activeCategory === 'Telaah' || !activeCategory) && !searchQuery && (
-            <InfographicsSection
-              infographics={infographics}
-              onSelectInfographic={(info) => setSelectedInfographic(info)}
             />
           )}
 

@@ -40,6 +40,32 @@ export const initialData: InitialData = {
       image: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=1000&q=80',
       isFeatured: true,
       tags: ['ADAS', 'Teknologi', 'AI', 'Safety']
+    },
+    {
+      id: 'car-4',
+      title: 'Transformasi Digital Pelayanan Publik di Seluruh Instansi Pemerintah 2026',
+      category: 'Pelayanan Publik',
+      publishedAt: '30 Juli 2026, 09.15',
+      views: 2150,
+      snippet: 'Pemerintah meresmikan integrasi layanan publik berbasis AI terpadu untuk mempermudah perizinan dan layanan masyarakat secara transparan.',
+      content: `Kementerian Pendayagunaan Aparatur Negara dan Reformasi Birokrasi (PANRB) meluncurkan platform integrasi nasional pelayanan publik terpadu.\n\nLangkah ini menyatukan ribuan portal layanan daerah dan pusat ke dalam satu sistem single sign-on dengan verifikasi identitas digital mandiri.\n\nDiharapkan keberadaan portal terpadu ini mempercepat indeks kepuasan masyarakat hingga 95% di seluruh Indonesia.`,
+      author: 'Redaksi Pelayanan Publik',
+      image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1000&q=80',
+      isFeatured: true,
+      tags: ['Pelayanan Publik', 'Birokrasi', 'Digitalisasi', 'Pemerintah']
+    },
+    {
+      id: 'car-5',
+      title: 'Sinergi BUMN & Korporasi Percepat Komitmen Net-Zero Emission 2060',
+      category: 'BUMN',
+      publishedAt: '30 Juli 2026, 08.30',
+      views: 1890,
+      snippet: 'Konsorsium BUMN dan pelaku industri nasional sepakat mengakselerasi transisi energi hijau dan penggunaan pembangkit listrik terbarukan.',
+      content: `Dalam rangka menekan emisi karbon nasional, konsorsium BUMN lintas sektor menandatangani nota kesepahaman pengadopsian energi terbarukan.\n\nProgram ini mencakup pembangunan PLTS atap skala besar di kawasan industri, optimalisasi armada operasional listrik, serta sertifikasi kredit karbon.\n\nSinergi strategis ini diharapkan menjadi katalisator keberhasilan target Net-Zero Emission Indonesia tahun 2060.`,
+      author: 'Tim BUMN & Energi',
+      image: 'https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?auto=format&fit=crop&w=1000&q=80',
+      isFeatured: true,
+      tags: ['BUMN', 'NetZero', 'Energi Terbarukan', 'Hijau']
     }
   ],
   articles: [
