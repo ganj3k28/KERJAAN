@@ -48,6 +48,24 @@ export interface EventItem {
 
 export type AdminRole = 'superadmin' | 'editor' | 'author';
 
+export interface HeaderQuickLink {
+  id: string;
+  label: string;
+  url?: string;
+  category?: string;
+  icon?: string;
+  isHighlighted?: boolean;
+}
+
+export interface HeaderSettings {
+  showQuickLinks: boolean;
+  quickLinks: HeaderQuickLink[];
+  subscribeButtonText: string;
+  subscribeButtonBgColor: string;
+  loginButtonText: string;
+  showSearchBox: boolean;
+}
+
 export interface AdminUser {
   id: string;
   username: string;

@@ -24,10 +24,12 @@ import {
   FolderPlus,
   Tag,
   PieChart,
+  Sliders,
+  Menu,
 } from 'lucide-react';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { NewsArticle, Infographic, DataboksItem, AdminUser, AdminRole } from '../types';
+import { NewsArticle, Infographic, DataboksItem, AdminUser, AdminRole, HeaderSettings, HeaderQuickLink } from '../types';
 import { initialData } from '../initialData';
 import { Logo } from './Logo';
 import { ImageUploadInput } from './ImageUploadInput';
@@ -54,7 +56,9 @@ const DEFAULT_CATEGORIES_FALLBACK = [
 interface AdminPageProps {
   articles: NewsArticle[];
   categories?: string[];
+  headerSettings?: HeaderSettings;
   onRefreshCategories?: () => void;
+  onRefreshHeaderSettings?: () => void;
   onRefreshData: () => void;
   onNavigateHome: () => void;
 }
@@ -62,7 +66,9 @@ interface AdminPageProps {
 export const AdminPage: React.FC<AdminPageProps> = ({
   articles,
   categories = [],
+  headerSettings,
   onRefreshCategories,
+  onRefreshHeaderSettings,
   onRefreshData,
   onNavigateHome,
 }) => {
@@ -83,7 +89,37 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   const [isSubmittingLogin, setIsSubmittingLogin] = useState(false);
 
   // Admin CMS Tabs
-  const [activeTab, setActiveTab] = useState<'articles' | 'categories' | 'insight' | 'databoks' | 'users' | 'system'>('articles');
+  const [activeTab, setActiveTab] = useState<'articles' | 'header' | 'categories' | 'insight' | 'databoks' | 'users' | 'system'>('articles');
+
+  // Header Management State
+  const [localHeaderSettings, setLocalHeaderSettings] = useState<HeaderSettings>(() => {
+    return (
+      headerSettings || {
+        showQuickLinks: true,
+        quickLinks: [
+          { id: 'ql-1', label: 'Menu', category: '', icon: 'menu' },
+          { id: 'ql-2', label: 'Harian', category: 'Berita Terbaru', icon: '' },
+          { id: 'ql-3', label: 'Mingguan', category: 'Telaah', icon: '' },
+          { id: 'ql-4', label: 'ASQI Plus', category: 'ASQI', icon: 'badge', isHighlighted: true },
+        ],
+        subscribeButtonText: 'Langganan',
+        subscribeButtonBgColor: '#e11d48',
+        loginButtonText: 'Masuk',
+        showSearchBox: true,
+      }
+    );
+  });
+  const [isSavingHeader, setIsSavingHeader] = useState(false);
+  const [newQlLabel, setNewQlLabel] = useState('');
+  const [newQlCategory, setNewQlCategory] = useState('');
+  const [newQlIcon, setNewQlIcon] = useState('none');
+  const [newQlHighlighted, setNewQlHighlighted] = useState(false);
+
+  useEffect(() => {
+    if (headerSettings) {
+      setLocalHeaderSettings(headerSettings);
+    }
+  }, [headerSettings]);
 
   // Category Management State
   const [newCatName, setNewCatName] = useState('');
@@ -520,6 +556,61 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     }
   };
 
+  // Header Settings Handlers
+  const handleSaveHeaderSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingHeader(true);
+
+    try {
+      const res = await fetch('/api/header-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings: localHeaderSettings }),
+      }).then((r) => r.json());
+
+      if (res.success) {
+        setMsg({ type: 'success', text: 'Pengaturan Header Bar berhasil diperbarui dan disinkronkan!' });
+        if (onRefreshHeaderSettings) onRefreshHeaderSettings();
+      } else {
+        setMsg({ type: 'error', text: res.message || 'Gagal menyimpan pengaturan header' });
+      }
+    } catch {
+      setMsg({ type: 'error', text: 'Gagal terhubung ke server saat menyimpan pengaturan header' });
+    } finally {
+      setIsSavingHeader(false);
+    }
+  };
+
+  const handleAddQuickLink = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newQlLabel.trim()) return;
+
+    const newItem: HeaderQuickLink = {
+      id: 'ql-' + Date.now(),
+      label: newQlLabel.trim(),
+      category: newQlCategory,
+      icon: newQlIcon === 'none' ? '' : newQlIcon,
+      isHighlighted: newQlHighlighted,
+    };
+
+    setLocalHeaderSettings((prev) => ({
+      ...prev,
+      quickLinks: [...prev.quickLinks, newItem],
+    }));
+
+    setNewQlLabel('');
+    setNewQlCategory('');
+    setNewQlIcon('none');
+    setNewQlHighlighted(false);
+  };
+
+  const handleDeleteQuickLink = (id: string) => {
+    setLocalHeaderSettings((prev) => ({
+      ...prev,
+      quickLinks: prev.quickLinks.filter((item) => item.id !== id),
+    }));
+  };
+
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUsername || !newPassword || !newName) {
@@ -861,6 +952,29 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                   }}
                 >
                   <FileText size={16} style={{ color: activeTab === 'articles' ? '#ffffff' : '#38bdf8' }} /> Kelola Berita
+                </button>
+              )}
+
+              {(user.role === 'superadmin' || user.role === 'editor' || user.role === 'author') && (
+                <button
+                  onClick={() => setActiveTab('header')}
+                  style={{
+                    backgroundColor: activeTab === 'header' ? '#0284c7' : '#0f172a',
+                    color: '#ffffff',
+                    border: `1px solid ${activeTab === 'header' ? '#38bdf8' : '#334155'}`,
+                    padding: '10px 14px',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    textAlign: 'left',
+                    width: '100%',
+                  }}
+                >
+                  <Sliders size={16} style={{ color: activeTab === 'header' ? '#ffffff' : '#f43f5e' }} /> Kelola Header Bar
                 </button>
               )}
 
@@ -1270,6 +1384,220 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB HEADER: KELOLA HEADER BAR (ALL ROLES) */}
+        {activeTab === 'header' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* Header Settings Form: General Controls */}
+            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '24px', border: '1px solid #334155' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 800, marginTop: 0, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: '#f8fafc' }}>
+                <Sliders size={18} style={{ color: '#f43f5e' }} /> Pengaturan Tombol &amp; Tampilan Header Bar
+              </h3>
+
+              <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '20px', lineHeight: 1.5 }}>
+                Sesuaikan teks tombol, warna, serta opsi pencarian dan menu cepat yang muncul di sebelah kanan logo portal berita.
+              </p>
+
+              <form onSubmit={handleSaveHeaderSettings} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
+                    Teks Tombol Langganan
+                  </label>
+                  <input
+                    type="text"
+                    value={localHeaderSettings.subscribeButtonText}
+                    onChange={(e) => setLocalHeaderSettings({ ...localHeaderSettings, subscribeButtonText: e.target.value })}
+                    placeholder="Langganan"
+                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#ffffff', fontSize: '14px' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
+                    Warna Background Tombol Langganan
+                  </label>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <input
+                      type="color"
+                      value={localHeaderSettings.subscribeButtonBgColor}
+                      onChange={(e) => setLocalHeaderSettings({ ...localHeaderSettings, subscribeButtonBgColor: e.target.value })}
+                      style={{ width: '42px', height: '42px', border: 'none', borderRadius: '6px', cursor: 'pointer', backgroundColor: 'transparent' }}
+                    />
+                    <input
+                      type="text"
+                      value={localHeaderSettings.subscribeButtonBgColor}
+                      onChange={(e) => setLocalHeaderSettings({ ...localHeaderSettings, subscribeButtonBgColor: e.target.value })}
+                      style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#ffffff', fontSize: '14px' }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
+                    Teks Tombol Masuk / Login
+                  </label>
+                  <input
+                    type="text"
+                    value={localHeaderSettings.loginButtonText}
+                    onChange={(e) => setLocalHeaderSettings({ ...localHeaderSettings, loginButtonText: e.target.value })}
+                    placeholder="Masuk"
+                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#ffffff', fontSize: '14px' }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', justifyContent: 'center' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '13px', color: '#f1f5f9', fontWeight: 600 }}>
+                    <input
+                      type="checkbox"
+                      checked={localHeaderSettings.showSearchBox}
+                      onChange={(e) => setLocalHeaderSettings({ ...localHeaderSettings, showSearchBox: e.target.checked })}
+                      style={{ width: '16px', height: '16px', accentColor: '#0284c7' }}
+                    />
+                    Tampilkan Kotak Pencarian Kompak di Header
+                  </label>
+
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '13px', color: '#f1f5f9', fontWeight: 600 }}>
+                    <input
+                      type="checkbox"
+                      checked={localHeaderSettings.showQuickLinks}
+                      onChange={(e) => setLocalHeaderSettings({ ...localHeaderSettings, showQuickLinks: e.target.checked })}
+                      style={{ width: '16px', height: '16px', accentColor: '#0284c7' }}
+                    />
+                    Tampilkan Quick Links Menu di Samping Logo
+                  </label>
+                </div>
+
+                <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+                  <button
+                    type="submit"
+                    disabled={isSavingHeader}
+                    style={{ backgroundColor: '#0284c7', color: '#ffffff', border: 'none', padding: '12px 24px', borderRadius: '6px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    <CheckCircle size={16} /> {isSavingHeader ? 'Menyimpan...' : 'Simpan Pengaturan Header Bar'}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Manage Quick Links List */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+              {/* Form Add Quick Link */}
+              <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '24px', border: '1px solid #334155' }}>
+                <h4 style={{ fontSize: '15px', fontWeight: 800, marginTop: 0, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px', color: '#38bdf8' }}>
+                  <Plus size={16} /> Tambah Menu / Quick Link Baru
+                </h4>
+
+                <form onSubmit={handleAddQuickLink} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
+                      Label Menu (Contoh: Harian, Mingguan, ASQI Plus...) *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newQlLabel}
+                      onChange={(e) => setNewQlLabel(e.target.value)}
+                      placeholder="Judul menu di samping logo"
+                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#ffffff', fontSize: '14px' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
+                      Target Kategori Berita (Opsional)
+                    </label>
+                    <select
+                      value={newQlCategory}
+                      onChange={(e) => setNewQlCategory(e.target.value)}
+                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#ffffff', fontSize: '14px' }}
+                    >
+                      <option value="">-- Pilih Kategori Tujuan --</option>
+                      {effectiveCategories.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
+                      Tipe Icon
+                    </label>
+                    <select
+                      value={newQlIcon}
+                      onChange={(e) => setNewQlIcon(e.target.value)}
+                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#ffffff', fontSize: '14px' }}
+                    >
+                      <option value="none">Tanpa Icon (Teks Biasa)</option>
+                      <option value="menu">Icon Menu Hamburg (☰)</option>
+                      <option value="badge">Badge Merah Plus (A+)</option>
+                    </select>
+                  </div>
+
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: '#f1f5f9' }}>
+                    <input
+                      type="checkbox"
+                      checked={newQlHighlighted}
+                      onChange={(e) => setNewQlHighlighted(e.target.checked)}
+                      style={{ accentColor: '#ef4444' }}
+                    />
+                    Tandai Sebagai Menu Khusus (Font Tebal + Warna Spesial)
+                  </label>
+
+                  <button
+                    type="submit"
+                    style={{ backgroundColor: '#0284c7', color: '#ffffff', border: 'none', padding: '10px', borderRadius: '6px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                  >
+                    <Plus size={16} /> Tambahkan ke Daftar Header Link
+                  </button>
+                </form>
+              </div>
+
+              {/* Quick Links List */}
+              <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '24px', border: '1px solid #334155' }}>
+                <h4 style={{ fontSize: '15px', fontWeight: 800, marginTop: 0, marginBottom: '14px', color: '#a78bfa' }}>
+                  Daftar Quick Links Aktif ({localHeaderSettings.quickLinks.length})
+                </h4>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {localHeaderSettings.quickLinks.map((item, idx) => (
+                    <div
+                      key={item.id}
+                      style={{
+                        backgroundColor: '#0f172a',
+                        padding: '12px 14px',
+                        borderRadius: '6px',
+                        border: '1px solid #334155',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700 }}>#{idx + 1}</span>
+                        {item.icon === 'menu' && <span style={{ color: '#38bdf8' }}>☰</span>}
+                        {item.icon === 'badge' && <span style={{ backgroundColor: '#dc2626', color: '#ffffff', fontSize: '10px', fontWeight: 800, padding: '1px 4px', borderRadius: '2px' }}>A+</span>}
+                        <div>
+                          <strong style={{ color: '#ffffff', fontSize: '13px', display: 'block' }}>{item.label}</strong>
+                          <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                            {item.category ? `Kategori: ${item.category}` : 'Navigasi umum'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => handleDeleteQuickLink(item.id)}
+                        style={{ backgroundColor: '#7f1d1d', border: 'none', color: '#fca5a5', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                        title="Hapus Link"
+                      >
+                        <Trash2 size={12} /> Hapus
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

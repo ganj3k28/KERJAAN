@@ -606,6 +606,51 @@ app.delete('/api/categories/:name', (req, res) => {
   }
 });
 
+// DEFAULT HEADER SETTINGS
+const DEFAULT_HEADER_SETTINGS = {
+  showQuickLinks: true,
+  quickLinks: [
+    { id: 'ql-1', label: 'Menu', category: '', icon: 'menu' },
+    { id: 'ql-2', label: 'Harian', category: 'Berita Terbaru', icon: '' },
+    { id: 'ql-3', label: 'Mingguan', category: 'Telaah', icon: '' },
+    { id: 'ql-4', label: 'ASQI Plus', category: 'ASQI', icon: 'badge', isHighlighted: true },
+  ],
+  subscribeButtonText: 'Langganan',
+  subscribeButtonBgColor: '#e11d48',
+  loginButtonText: 'Masuk',
+  showSearchBox: true,
+};
+
+// GET /api/header-settings
+app.get('/api/header-settings', (req, res) => {
+  const data = getStoreData();
+  const settings = data.headerSettings || DEFAULT_HEADER_SETTINGS;
+  res.json({ success: true, settings });
+});
+
+// POST /api/header-settings
+app.post('/api/header-settings', (req, res) => {
+  try {
+    const { settings } = req.body;
+    if (!settings || typeof settings !== 'object') {
+      return res.status(400).json({ success: false, message: 'Data pengaturan header tidak valid' });
+    }
+
+    const data = getStoreData();
+    data.headerSettings = settings;
+    saveStoreData(data);
+
+    // Sync to Firestore
+    setDoc(doc(db, 'settings', 'header'), { ...settings, updatedAt: new Date().toISOString() }).catch((err) => {
+      console.error('Firestore header settings save error:', err);
+    });
+
+    res.json({ success: true, settings, message: 'Pengaturan header berhasil diperbarui' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err?.message || 'Gagal menyimpan pengaturan header' });
+  }
+});
+
 // DELETE /api/admin/users/:id
 app.delete('/api/admin/users/:id', (req, res) => {
   let users = getUsersData();

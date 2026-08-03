@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { collection, onSnapshot, doc, setDoc } from 'firebase/firestore';
 import { Wrench, Shield, Lock, AlertTriangle, RefreshCw } from 'lucide-react';
 import { db } from './lib/firebase';
-import { NewsArticle, Infographic, DataboksItem, VideoItem } from './types';
+import { NewsArticle, Infographic, DataboksItem, VideoItem, HeaderSettings } from './types';
 import { initialData } from './initialData';
 import { Header } from './components/Header';
 import { Navbar } from './components/Navbar';
@@ -110,6 +110,9 @@ export default function App() {
     'Bisnis',
     'ASQI',
   ]);
+
+  // Header Settings State
+  const [headerSettings, setHeaderSettings] = useState<HeaderSettings | undefined>(undefined);
 
   // Modals
   const [selectedArticle, setSelectedArticle] = useState<NewsArticle | null>(null);
@@ -238,6 +241,17 @@ export default function App() {
       .catch(() => {});
   }, []);
 
+  const fetchHeaderSettings = useCallback(() => {
+    fetch('/api/header-settings')
+      .then((r) => r.json())
+      .then((res) => {
+        if (res?.success && res.settings) {
+          setHeaderSettings(res.settings);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const handleOpenArticle = useCallback((art: NewsArticle) => {
     const newViews = (art.views || 0) + 1;
     const updatedArt = { ...art, views: newViews };
@@ -258,6 +272,7 @@ export default function App() {
     fetchBackendData();
 
     fetchCategories();
+    fetchHeaderSettings();
 
     // Live Firebase Firestore listener across all browsers & devices
     let unsubArticles: (() => void) | null = null;
@@ -265,6 +280,7 @@ export default function App() {
     let unsubData: (() => void) | null = null;
     let unsubMaint: (() => void) | null = null;
     let unsubCats: (() => void) | null = null;
+    let unsubHeader: (() => void) | null = null;
 
     try {
       unsubArticles = onSnapshot(collection(db, 'articles'), (snapshot) => {
@@ -308,6 +324,13 @@ export default function App() {
           }
         }
       });
+
+      unsubHeader = onSnapshot(doc(db, 'settings', 'header'), (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data() as HeaderSettings;
+          setHeaderSettings(data);
+        }
+      });
     } catch (err) {
       console.error('Firestore real-time subscription notice:', err);
     }
@@ -341,6 +364,8 @@ export default function App() {
       if (unsubInfo) unsubInfo();
       if (unsubData) unsubData();
       if (unsubMaint) unsubMaint();
+      if (unsubCats) unsubCats();
+      if (unsubHeader) unsubHeader();
       clearInterval(interval);
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('visibilitychange', handleFocus);
@@ -390,7 +415,9 @@ export default function App() {
       <AdminPage
         articles={allArticles}
         categories={categories}
+        headerSettings={headerSettings}
         onRefreshCategories={fetchCategories}
+        onRefreshHeaderSettings={fetchHeaderSettings}
         onRefreshData={refreshLocalData}
         onNavigateHome={() => navigateTo('/')}
       />
@@ -530,6 +557,13 @@ export default function App() {
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         onSearchSubmit={handleSearchSubmit}
+        headerSettings={headerSettings}
+        onSelectCategory={(cat) => {
+          setActiveCategory(cat);
+          setSearchQuery('');
+        }}
+        onOpenLoginModal={() => navigateTo('/admin')}
+        onOpenSubscribeModal={() => setShowSubscribeModal(true)}
       />
 
       {/* Navigation Menu */}
