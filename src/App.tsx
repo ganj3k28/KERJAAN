@@ -23,6 +23,7 @@ import { AboutPage } from './components/pages/AboutPage';
 import { CyberMediaGuidelinesPage } from './components/pages/CyberMediaGuidelinesPage';
 import { CopyrightPage } from './components/pages/CopyrightPage';
 import { DataServicesPage } from './components/pages/DataServicesPage';
+import { NewsDetailPage } from './components/pages/NewsDetailPage';
 
 export default function App() {
   const [allArticles, setAllArticles] = useState<NewsArticle[]>(() => {
@@ -288,6 +289,10 @@ export default function App() {
     try {
       setDoc(doc(db, 'articles', art.id), { views: newViews }, { merge: true }).catch(() => {});
     } catch {}
+
+    window.history.pushState({}, '', `/berita/${art.id}`);
+    setCurrentPath(`/berita/${art.id}`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   // Initial fetch + Auto sync every 3 seconds & on tab focus + Real-time Firestore Cloud Database listener
@@ -440,6 +445,20 @@ export default function App() {
   const isCopyrightRoute = normalizedPath.includes('/hak-cipta') || normalizedPath.includes('hak-cipta');
   const isDataServicesRoute = normalizedPath.includes('/layanan-informasi-data') || normalizedPath.includes('layanan-informasi-data');
 
+  const isNewsDetailRoute = normalizedPath.includes('/berita/') || currentPath.startsWith('/berita/');
+  let routeArticleId = '';
+  if (isNewsDetailRoute) {
+    const parts = currentPath.split('/berita/');
+    if (parts.length > 1) {
+      routeArticleId = parts[1].split('?')[0].split('#')[0].trim();
+    }
+  }
+
+  const activeNewsArticle = routeArticleId
+    ? allArticles.find((a) => a.id.toLowerCase() === routeArticleId.toLowerCase()) ||
+      allArticles.find((a) => a.id.toLowerCase().includes(routeArticleId.toLowerCase()))
+    : selectedArticle;
+
   // Dedicated Route for /admin
   if (isAdminRoute) {
     return (
@@ -452,6 +471,242 @@ export default function App() {
         onRefreshData={refreshLocalData}
         onNavigateHome={() => navigateTo('/')}
       />
+    );
+  }
+
+  // Dedicated Route for News Article Detail Page (/berita/:id)
+  if ((isNewsDetailRoute || selectedArticle) && activeNewsArticle) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <Header
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          onSearchSubmit={(e) => {
+            handleSearchSubmit(e);
+            setSelectedArticle(null);
+            navigateTo('/');
+          }}
+          headerSettings={headerSettings}
+          subscriberUser={subscriberUser}
+          onOpenLeftDrawer={() => setIsLeftDrawerOpen(true)}
+          onSelectCategory={(cat) => {
+            setActiveCategory(cat);
+            setSelectedArticle(null);
+            navigateTo('/');
+          }}
+          onOpenLoginModal={() => setShowSubscriberLoginModal(true)}
+          onOpenSubscribeModal={() => setShowSubscribeModal(true)}
+        />
+
+        <Navbar
+          activeCategory={activeCategory}
+          categories={categories}
+          onSelectCategory={(cat) => {
+            setActiveCategory(cat);
+            setSelectedArticle(null);
+            navigateTo('/');
+          }}
+        />
+
+        <div style={{ flex: 1 }}>
+          <NewsDetailPage
+            article={activeNewsArticle}
+            allArticles={allArticles}
+            subscriberUser={subscriberUser}
+            onNavigateHome={() => {
+              setSelectedArticle(null);
+              navigateTo('/');
+            }}
+            onSelectArticle={(art) => handleOpenArticle(art)}
+            onOpenSubscribeModal={() => setShowSubscribeModal(true)}
+            onOpenLoginModal={() => setShowSubscriberLoginModal(true)}
+            videos={videos}
+            onPlayVideo={(video) => setSelectedVideo(video)}
+          />
+        </div>
+
+        {/* Professional Footer */}
+        <footer
+          style={{
+            backgroundColor: '#0b2545',
+            color: '#94a3b8',
+            padding: '40px 16px 20px',
+            marginTop: '40px',
+            borderTop: '4px solid #0056b3',
+          }}
+        >
+          <div
+            style={{
+              maxWidth: '1200px',
+              margin: '0 auto',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: '32px',
+              paddingBottom: '30px',
+              borderBottom: '1px solid rgba(255,255,255,0.1)',
+            }}
+          >
+            <div>
+              <div style={{ marginBottom: '12px', cursor: 'pointer' }} onClick={() => { setSelectedArticle(null); navigateTo('/'); }}>
+                <Logo height={38} />
+              </div>
+              <p style={{ fontSize: '13px', lineHeight: 1.6 }}>
+                Menyuarakan Pelayanan Prima Media Pers Pelayanan Publik Indonesia
+              </p>
+            </div>
+
+            <div>
+              <h4 style={{ color: '#ffffff', fontSize: '14px', fontWeight: 700, marginBottom: '12px' }}>
+                KATEGORI UTAMA
+              </h4>
+              <ul style={{ listStyle: 'none', fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <li><a href="/" onClick={(e) => { e.preventDefault(); setActiveCategory('Beranda'); setSelectedArticle(null); navigateTo('/'); }} style={{ color: '#94a3b8', textDecoration: 'none' }}>Beranda Utama</a></li>
+                <li><a href="/" onClick={(e) => { e.preventDefault(); setActiveCategory('Pelayanan Publik'); setSelectedArticle(null); navigateTo('/'); }} style={{ color: '#94a3b8', textDecoration: 'none' }}>Pelayanan Publik</a></li>
+                <li><a href="/" onClick={(e) => { e.preventDefault(); setActiveCategory('BUMN'); setSelectedArticle(null); navigateTo('/'); }} style={{ color: '#94a3b8', textDecoration: 'none' }}>BUMN &amp; BUMD</a></li>
+                <li><a href="/" onClick={(e) => { e.preventDefault(); setActiveCategory('PROFIL TOKOH PELAYANAN'); setSelectedArticle(null); navigateTo('/'); }} style={{ color: '#94a3b8', textDecoration: 'none' }}>Profil Tokoh Pelayanan</a></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 style={{ color: '#ffffff', fontSize: '14px', fontWeight: 700, marginBottom: '12px' }}>
+                REDAKSI &amp; LAYANAN
+              </h4>
+              <ul style={{ listStyle: 'none', fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '8px', color: '#94a3b8' }}>
+                <li>
+                  <a
+                    href="/tentang-asqi"
+                    onClick={(e) => { e.preventDefault(); setSelectedArticle(null); navigateTo('/tentang-asqi'); }}
+                    style={{ color: '#cbd5e1', textDecoration: 'none', cursor: 'pointer' }}
+                  >
+                    Tentang ASQI NEWS
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/pedoman-media-siber"
+                    onClick={(e) => { e.preventDefault(); setSelectedArticle(null); navigateTo('/pedoman-media-siber'); }}
+                    style={{ color: '#cbd5e1', textDecoration: 'none', cursor: 'pointer' }}
+                  >
+                    Pedoman Media Siber
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/hak-cipta"
+                    onClick={(e) => { e.preventDefault(); setSelectedArticle(null); navigateTo('/hak-cipta'); }}
+                    style={{ color: '#cbd5e1', textDecoration: 'none', cursor: 'pointer' }}
+                  >
+                    Siber &amp; Hak Cipta
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/layanan-informasi-data"
+                    onClick={(e) => { e.preventDefault(); setSelectedArticle(null); navigateTo('/layanan-informasi-data'); }}
+                    style={{ color: '#cbd5e1', textDecoration: 'none', cursor: 'pointer' }}
+                  >
+                    Layanan Informasi Data
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div
+            style={{
+              maxWidth: '1200px',
+              margin: '20px auto 0',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '12px',
+              fontSize: '12px',
+            }}
+          >
+            <div>© {new Date().getFullYear()} ASQI NEWS.com. Hak Cipta Dilindungi Undang-Undang.</div>
+            <div style={{ display: 'flex', gap: '16px' }}>
+              <a href="/hak-cipta" onClick={(e) => { e.preventDefault(); setSelectedArticle(null); navigateTo('/hak-cipta'); }} style={{ color: '#cbd5e1', textDecoration: 'none' }}>Syarat &amp; Ketentuan</a>
+              <a href="/tentang-asqi" onClick={(e) => { e.preventDefault(); setSelectedArticle(null); navigateTo('/tentang-asqi'); }} style={{ color: '#cbd5e1', textDecoration: 'none' }}>Kebijakan Privasi</a>
+              <a href="/pedoman-media-siber" onClick={(e) => { e.preventDefault(); setSelectedArticle(null); navigateTo('/pedoman-media-siber'); }} style={{ color: '#cbd5e1', textDecoration: 'none' }}>Pedoman Siber</a>
+            </div>
+          </div>
+        </footer>
+
+        {/* LEFT SIDEBAR DRAWER */}
+        <LeftSidebarDrawer
+          isOpen={isLeftDrawerOpen}
+          onClose={() => setIsLeftDrawerOpen(false)}
+          categories={categories}
+          activeCategory={activeCategory}
+          onSelectCategory={(cat) => {
+            setActiveCategory(cat);
+            setSelectedArticle(null);
+            setIsLeftDrawerOpen(false);
+            navigateTo('/');
+          }}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          onSearchSubmit={(e) => {
+            handleSearchSubmit(e);
+            setSelectedArticle(null);
+            setIsLeftDrawerOpen(false);
+            navigateTo('/');
+          }}
+          subscriberUser={subscriberUser}
+          onOpenSubscribeModal={() => {
+            setIsLeftDrawerOpen(false);
+            setShowSubscribeModal(true);
+          }}
+          onOpenLoginModal={() => {
+            setIsLeftDrawerOpen(false);
+            setShowSubscriberLoginModal(true);
+          }}
+          onLogoutSubscriber={() => {
+            setSubscriberUser(null);
+            localStorage.removeItem('asqi_subscriber_user');
+          }}
+          onOpenAdminPanel={() => {
+            setIsLeftDrawerOpen(false);
+            navigateTo('/admin');
+          }}
+          onNavigateToPage={(path) => {
+            setIsLeftDrawerOpen(false);
+            setSelectedArticle(null);
+            navigateTo(path);
+          }}
+        />
+
+        {/* SUBSCRIBER LOGIN MODAL */}
+        <SubscriberLoginModal
+          isOpen={showSubscriberLoginModal}
+          onClose={() => setShowSubscriberLoginModal(false)}
+          onSubscriberLoginSuccess={(user) => {
+            setSubscriberUser(user);
+            localStorage.setItem('asqi_subscriber_user', JSON.stringify(user));
+            setShowSubscriberLoginModal(false);
+          }}
+          onOpenSubscribeModal={() => {
+            setShowSubscriberLoginModal(false);
+            setShowSubscribeModal(true);
+          }}
+        />
+
+        {showSubscribeModal && (
+          <SubscribeModal
+            onClose={() => setShowSubscribeModal(false)}
+            onSubscriberActivated={(user) => {
+              setSubscriberUser(user);
+              localStorage.setItem('asqi_subscriber_user', JSON.stringify(user));
+              setShowSubscribeModal(false);
+            }}
+          />
+        )}
+
+        {selectedVideo && (
+          <VideoModal video={selectedVideo} onClose={() => setSelectedVideo(null)} />
+        )}
+      </div>
     );
   }
 
@@ -1033,17 +1288,6 @@ export default function App() {
       />
 
       {/* MODALS */}
-      {selectedArticle && (
-        <ArticleModal
-          article={selectedArticle}
-          onClose={() => setSelectedArticle(null)}
-          onSelectRelated={(art) => handleOpenArticle(art)}
-          subscriberUser={subscriberUser}
-          onOpenSubscribeModal={() => setShowSubscribeModal(true)}
-          onOpenLoginModal={() => setShowSubscriberLoginModal(true)}
-        />
-      )}
-
       {selectedInfographic && (
         <div
           style={{
