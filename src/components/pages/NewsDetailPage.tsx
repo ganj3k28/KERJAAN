@@ -47,6 +47,23 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (article?.id) {
+      document.title = `${article.title} - ASQI NEWS.com`;
+
+      const metaDesc = document.querySelector('meta[name="description"]');
+      if (metaDesc) metaDesc.setAttribute('content', article.snippet || article.title);
+
+      const ogTitle = document.querySelector('meta[property="og:title"]');
+      if (ogTitle) ogTitle.setAttribute('content', article.title);
+
+      const ogDesc = document.querySelector('meta[property="og:description"]');
+      if (ogDesc) ogDesc.setAttribute('content', article.snippet || article.title);
+
+      const ogImg = document.querySelector('meta[property="og:image"]');
+      if (ogImg) ogImg.setAttribute('content', article.image);
+
+      const ogUrl = document.querySelector('meta[property="og:url"]');
+      if (ogUrl) ogUrl.setAttribute('content', window.location.href);
+
       fetch(`/api/news/${article.id}`)
         .then((res) => res.json())
         .then((data) => {

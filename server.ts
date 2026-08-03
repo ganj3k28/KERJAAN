@@ -779,12 +779,80 @@ app.get('/api/export-sql', (req, res) => {
   res.send(sql);
 });
 
+function escapeHtmlAttr(str: string): string {
+  if (!str) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\r?\n+/g, ' ');
+}
+
+function injectMetaTags(html: string, req: express.Request): string {
+  try {
+    const urlPath = req.originalUrl || req.url || '';
+    if (urlPath.includes('/berita/')) {
+      const parts = urlPath.split('/berita/');
+      if (parts.length > 1) {
+        const articleId = parts[1].split('?')[0].split('#')[0].trim();
+        if (articleId) {
+          const data = getStoreData();
+          const articles: NewsArticle[] = data.articles || [];
+          const article =
+            articles.find((a) => a.id.toLowerCase() === articleId.toLowerCase()) ||
+            articles.find((a) => a.id.toLowerCase().includes(articleId.toLowerCase()));
+
+          if (article) {
+            const protocol = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'https';
+            const host = req.get('host') || 'asqinews.com';
+            const fullUrl = `${protocol}://${host}${urlPath}`;
+
+            const title = `${article.title} - ASQI NEWS.com`;
+            const cleanTitle = escapeHtmlAttr(title);
+            const cleanArticleTitle = escapeHtmlAttr(article.title);
+
+            let rawDesc = article.snippet || article.content.replace(/\r?\n+/g, ' ').trim();
+            if (rawDesc.length > 200) {
+              rawDesc = rawDesc.substring(0, 197) + '...';
+            }
+            const cleanDesc = escapeHtmlAttr(rawDesc);
+
+            let imageUrl = article.image || '/asqinews-logo.svg';
+            if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+              imageUrl = `${protocol}://${host}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+            }
+            const cleanImg = escapeHtmlAttr(imageUrl);
+
+            html = html
+              .replace(/<title>.*?<\/title>/gi, `<title>${cleanTitle}</title>`)
+              .replace(/<meta name="title" content=".*?" \/>/gi, `<meta name="title" content="${cleanTitle}" />`)
+              .replace(/<meta name="description" content=".*?" \/>/gi, `<meta name="description" content="${cleanDesc}" />`)
+              .replace(/<meta property="og:type" content=".*?" \/>/gi, `<meta property="og:type" content="article" />`)
+              .replace(/<meta property="og:title" content=".*?" \/>/gi, `<meta property="og:title" content="${cleanArticleTitle}" />`)
+              .replace(/<meta property="og:description" content=".*?" \/>/gi, `<meta property="og:description" content="${cleanDesc}" />`)
+              .replace(/<meta property="og:image" content=".*?" \/>/gi, `<meta property="og:image" content="${cleanImg}" />`)
+              .replace(/<meta property="og:url" content=".*?" \/>/gi, `<meta property="og:url" content="${escapeHtmlAttr(fullUrl)}" />`)
+              .replace(/<meta property="twitter:title" content=".*?" \/>/gi, `<meta property="twitter:title" content="${cleanArticleTitle}" />`)
+              .replace(/<meta property="twitter:description" content=".*?" \/>/gi, `<meta property="twitter:description" content="${cleanDesc}" />`)
+              .replace(/<meta property="twitter:image" content=".*?" \/>/gi, `<meta property="twitter:image" content="${cleanImg}" />`);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error injecting meta tags:', err);
+  }
+  return html;
+}
+
 // Vite Middleware for Development & SPA Fallback
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },
-      appType: 'spa',
+      appType: 'custom',
     });
     app.use(vite.middlewares);
 
@@ -796,6 +864,7 @@ async function startServer() {
         const url = req.originalUrl;
         let template = fs.readFileSync(path.resolve(process.cwd(), 'index.html'), 'utf-8');
         template = await vite.transformIndexHtml(url, template);
+        template = injectMetaTags(template, req);
         res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
       } catch (e) {
         vite.ssrFixStacktrace(e as Error);
@@ -809,7 +878,9 @@ async function startServer() {
       if (req.originalUrl.startsWith('/api')) {
         return next();
       }
-      res.sendFile(path.join(distPath, 'index.html'));
+      let template = fs.readFileSync(path.join(distPath, 'index.html'), 'utf-8');
+      template = injectMetaTags(template, req);
+      res.status(200).set({ 'Content-Type': 'text/html' }).send(template);
     });
   }
 
