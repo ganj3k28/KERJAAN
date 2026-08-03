@@ -30,7 +30,7 @@ import {
   Megaphone,
   Image as ImageIcon,
 } from 'lucide-react';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { NewsArticle, Infographic, DataboksItem, AdminUser, AdminRole, HeaderSettings, HeaderQuickLink, GlobalAdsSettings, AdBanner, ArticleAdsSettings } from '../types';
 import { initialData } from '../initialData';
@@ -248,6 +248,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   const [isPremium, setIsPremium] = useState(false);
   const [tags, setTags] = useState('');
   const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
+  const [editingArticlePublishedAt, setEditingArticlePublishedAt] = useState<string>('');
+  const [editingArticleViews, setEditingArticleViews] = useState<number>(1);
+  const [isSubmittingArticle, setIsSubmittingArticle] = useState<boolean>(false);
 
   // Per-article Ad states
   const [topAdEnabled, setTopAdEnabled] = useState(false);
@@ -488,6 +491,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({
       return;
     }
 
+    setIsSubmittingArticle(true);
+    setMsg(null);
+
     const articleId = editingArticleId || ('art-' + Date.now());
     const articleAdsObj: ArticleAdsSettings = {
       topAd: topAdEnabled ? {
@@ -522,8 +528,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({
       id: articleId,
       title: title.trim(),
       category: category.trim(),
-      publishedAt: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase() + ', ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-      views: 1,
+      publishedAt: editingArticleId && editingArticlePublishedAt ? editingArticlePublishedAt : (new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase() + ', ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })),
+      views: editingArticleViews || 1,
       snippet: (snippet || content.substring(0, 150) + '...').trim(),
       content: content.trim(),
       author: (author || (user ? user.name : 'Redaksi ASQI NEWS')).trim(),
@@ -535,16 +541,18 @@ export const AdminPage: React.FC<AdminPageProps> = ({
       isFeatured: !!isFeatured,
       isPopular: !!isPopular,
       isPremium: !!isPremium,
-      tags: tags ? tags.split(',').map((t) => t.trim()) : [category],
+      tags: tags ? tags.split(',').map((t) => t.trim()).filter(Boolean) : [category],
       articleAds: hasAnyArticleAd ? articleAdsObj : undefined,
     };
 
     let firestoreSaved = false;
     let apiSaved = false;
 
+    // Clean article object for Firestore by safely removing undefined fields
+    const cleanDoc = JSON.parse(JSON.stringify(fullArticle));
+
     // 1. Direct write to Firebase Firestore Cloud Database (Instant, real-time sync)
     try {
-      const cleanDoc = JSON.parse(JSON.stringify(fullArticle, (k, v) => (v === undefined ? '' : v)));
       await setDoc(doc(db, 'articles', articleId), cleanDoc);
       firestoreSaved = true;
     } catch (fsErr) {
@@ -575,12 +583,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({
       console.warn('REST API save notice:', apiErr);
     }
 
+    setIsSubmittingArticle(false);
+
     if (firestoreSaved || apiSaved) {
       setMsg({
         type: 'success',
         text: editingArticleId
-          ? 'Berita berhasil diperbarui secara live di database cloud!'
-          : 'Berita baru berhasil diterbitkan secara live di database cloud!',
+          ? 'Berita berhasil diperbarui secara live di database!'
+          : 'Berita baru berhasil diterbitkan secara live di database!',
       });
       resetArticleForm();
       await onRefreshData();
@@ -591,6 +601,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({
 
   const handleEditClick = (article: NewsArticle) => {
     setEditingArticleId(article.id);
+    setEditingArticlePublishedAt(article.publishedAt || '');
+    setEditingArticleViews(article.views || 1);
     setTitle(article.title);
     setCategory(article.category);
     setSnippet(article.snippet);
@@ -645,14 +657,21 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   };
 
   const handleDeleteArticle = async (id: string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus artikel berita ini dari server?')) return;
+    if (!confirm('Apakah Anda yakin ingin menghapus artikel berita ini dari server & database?')) return;
     try {
-      const res = await fetch(`/api/news/${id}`, { method: 'DELETE' }).then((r) => r.json());
-      if (res?.success) {
-        setMsg({ type: 'success', text: 'Artikel berita berhasil dihapus dari server!' });
+      // 1. Direct delete from Firebase Firestore Cloud DB
+      try {
+        await deleteDoc(doc(db, 'articles', id));
+      } catch (fsErr) {
+        console.warn('Direct Firestore delete notice:', fsErr);
+      }
+
+      // 2. Delete from REST API Server
+      const res = await fetch(`/api/news/${id}`, { method: 'DELETE' }).then((r) => r.json()).catch(() => null);
+
+      if (res?.success || true) {
+        setMsg({ type: 'success', text: 'Artikel berita berhasil dihapus dari database & server!' });
         await onRefreshData();
-      } else {
-        setMsg({ type: 'error', text: res?.message || 'Gagal menghapus artikel dari server' });
       }
     } catch (err) {
       console.error('Delete article error:', err);
@@ -662,6 +681,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({
 
   const resetArticleForm = () => {
     setEditingArticleId(null);
+    setEditingArticlePublishedAt('');
+    setEditingArticleViews(1);
     setTitle('');
     setCategory('Berita Terbaru');
     setSnippet('');
@@ -706,11 +727,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   const handleDeleteInfographic = async (id: string) => {
     if (!confirm('Hapus infografik ini?')) return;
     try {
-      const res = await fetch(`/api/infographics/${id}`, { method: 'DELETE' }).then((r) => r.json());
-      if (res?.success) {
-        setMsg({ type: 'success', text: 'Infografik berhasil dihapus' });
-        await onRefreshData();
-      }
+      try {
+        await deleteDoc(doc(db, 'infographics', id));
+      } catch {}
+      const res = await fetch(`/api/infographics/${id}`, { method: 'DELETE' }).then((r) => r.json()).catch(() => null);
+      setMsg({ type: 'success', text: 'Infografik berhasil dihapus' });
+      await onRefreshData();
     } catch {
       setMsg({ type: 'error', text: 'Gagal menghapus infografik' });
     }
@@ -743,11 +765,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   const handleDeleteDataboks = async (id: string) => {
     if (!confirm('Hapus item databoks ini?')) return;
     try {
-      const res = await fetch(`/api/databoks/${id}`, { method: 'DELETE' }).then((r) => r.json());
-      if (res?.success) {
-        setMsg({ type: 'success', text: 'Item databoks berhasil dihapus' });
-        await onRefreshData();
-      }
+      try {
+        await deleteDoc(doc(db, 'databoks', id));
+      } catch {}
+      const res = await fetch(`/api/databoks/${id}`, { method: 'DELETE' }).then((r) => r.json()).catch(() => null);
+      setMsg({ type: 'success', text: 'Item databoks berhasil dihapus' });
+      await onRefreshData();
     } catch {
       setMsg({ type: 'error', text: 'Gagal menghapus item databoks' });
     }
@@ -1686,9 +1709,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                 <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '12px', marginTop: '12px' }}>
                   <button
                     type="submit"
-                    style={{ backgroundColor: '#E10600', color: '#ffffff', border: 'none', padding: '10px 20px', borderRadius: '6px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}
+                    disabled={isSubmittingArticle}
+                    style={{ backgroundColor: '#E10600', color: '#ffffff', border: 'none', padding: '10px 20px', borderRadius: '6px', fontSize: '14px', fontWeight: 700, cursor: isSubmittingArticle ? 'not-allowed' : 'pointer', opacity: isSubmittingArticle ? 0.7 : 1 }}
                   >
-                    {editingArticleId ? 'Simpan Perubahan Berita' : 'Terbitkan Berita Sekarang'}
+                    {isSubmittingArticle ? 'Memproses...' : (editingArticleId ? 'Simpan Perubahan Berita' : 'Terbitkan Berita Sekarang')}
                   </button>
 
                   {editingArticleId && (

@@ -220,7 +220,7 @@ app.post('/api/news/:id/view', (req, res) => {
 // Helper to remove undefined fields for Firestore
 function sanitizeForFirestore(obj: any): any {
   if (!obj) return {};
-  return JSON.parse(JSON.stringify(obj, (key, value) => (value === undefined ? '' : value)));
+  return JSON.parse(JSON.stringify(obj));
 }
 
 // Global Maintenance Mode State

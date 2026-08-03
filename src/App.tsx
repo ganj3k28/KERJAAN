@@ -332,30 +332,24 @@ export default function App() {
 
     try {
       unsubArticles = onSnapshot(collection(db, 'articles'), (snapshot) => {
-        if (!snapshot.empty) {
-          const arts = snapshot.docs.map((d) => d.data() as NewsArticle);
-          setAllArticles(arts);
-          const featured = arts.filter((a) => a.isFeatured);
-          let slides = featured.length > 0 ? featured : arts;
-          if (slides.length < 5) {
-            const existingIds = new Set(slides.map((a) => a.id));
-            const extra = arts.filter((a) => !existingIds.has(a.id));
-            slides = [...slides, ...extra];
-          }
-          setCarouselSlides(slides.slice(0, 5));
+        const arts = snapshot.docs.map((d) => d.data() as NewsArticle);
+        setAllArticles(arts);
+        const featured = arts.filter((a) => a.isFeatured);
+        let slides = featured.length > 0 ? featured : arts;
+        if (slides.length < 5 && arts.length > 0) {
+          const existingIds = new Set(slides.map((a) => a.id));
+          const extra = arts.filter((a) => !existingIds.has(a.id));
+          slides = [...slides, ...extra];
         }
+        setCarouselSlides(slides.slice(0, 5));
       });
 
       unsubInfo = onSnapshot(collection(db, 'infographics'), (snapshot) => {
-        if (!snapshot.empty) {
-          setInfographics(snapshot.docs.map((d) => d.data() as Infographic));
-        }
+        setInfographics(snapshot.docs.map((d) => d.data() as Infographic));
       });
 
       unsubData = onSnapshot(collection(db, 'databoks'), (snapshot) => {
-        if (!snapshot.empty) {
-          setDataboksItems(snapshot.docs.map((d) => d.data() as DataboksItem));
-        }
+        setDataboksItems(snapshot.docs.map((d) => d.data() as DataboksItem));
       });
 
       unsubMaint = onSnapshot(doc(db, 'settings', 'maintenance'), (snapshot) => {
