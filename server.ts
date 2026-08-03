@@ -4,7 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
 import firebaseConfig from './firebase-applet-config.json';
 import { initialData } from './src/initialData';
 import { AdminUser, NewsArticle, Infographic, DataboksItem } from './src/types';
@@ -780,14 +780,33 @@ app.get('/api/export-sql', (req, res) => {
 });
 
 // Image endpoint for OpenGraph / WhatsApp / Social Media preview
-app.get(['/api/news/:id/image', '/api/articles/:id/image'], async (req, res) => {
+app.get([
+  '/api/news/:id/image', 
+  '/api/news/:id/image.jpg', 
+  '/api/news/:id/image.png', 
+  '/api/articles/:id/image', 
+  '/api/articles/:id/image.jpg'
+], async (req, res) => {
   try {
-    const articleId = req.params.id;
+    const rawId = req.params.id;
+    const articleId = rawId.replace(/\.(jpg|png|webp|jpeg)$/i, '');
     const data = getStoreData();
     const articles: NewsArticle[] = data.articles || [];
-    const article =
+    let article =
       articles.find((a) => a.id.toLowerCase() === articleId.toLowerCase()) ||
       articles.find((a) => a.id.toLowerCase().includes(articleId.toLowerCase()));
+
+    // Fallback to Firestore if not found in local store memory
+    if (!article) {
+      try {
+        const articleDoc = await getDoc(doc(db, 'articles', articleId));
+        if (articleDoc.exists()) {
+          article = articleDoc.data() as NewsArticle;
+        }
+      } catch (err) {
+        console.error('Error fetching article for image endpoint:', err);
+      }
+    }
 
     if (!article || !article.image) {
       return res.redirect('https://asqinews.com/asqinews-logo.svg');
@@ -803,7 +822,7 @@ app.get(['/api/news/:id/image', '/api/articles/:id/image'], async (req, res) => 
         const buffer = Buffer.from(matches[2], 'base64');
         res.setHeader('Content-Type', mimeType);
         res.setHeader('Content-Length', buffer.length.toString());
-        res.setHeader('Cache-Control', 'public, max-age=86400');
+        res.setHeader('Cache-Control', 'public, max-age=31536000');
         return res.send(buffer);
       }
     }
@@ -822,7 +841,7 @@ app.get(['/api/news/:id/image', '/api/articles/:id/image'], async (req, res) => 
           const buffer = Buffer.from(arrayBuffer);
           res.setHeader('Content-Type', contentType);
           res.setHeader('Content-Length', buffer.length.toString());
-          res.setHeader('Cache-Control', 'public, max-age=86400');
+          res.setHeader('Cache-Control', 'public, max-age=31536000');
           return res.send(buffer);
         }
       } catch (err) {
@@ -853,19 +872,48 @@ function escapeHtmlAttr(str: string): string {
     .replace(/\r?\n+/g, ' ');
 }
 
-function injectMetaTags(html: string, req: express.Request): string {
+function setMetaTag(html: string, attrName: string, attrVal: string, contentVal: string): string {
+  const escapedContent = escapeHtmlAttr(contentVal);
+  const regex = new RegExp(`<meta\\s+[^>]*?${attrName}=["']${attrVal}["'][^>]*?>`, 'gi');
+  const newTag = `<meta ${attrName}="${attrVal}" content="${escapedContent}" />`;
+  
+  if (regex.test(html)) {
+    return html.replace(regex, newTag);
+  } else {
+    return html.replace('</head>', `  ${newTag}\n</head>`);
+  }
+}
+
+async function injectMetaTags(html: string, req: express.Request): Promise<string> {
   try {
     const urlPath = req.originalUrl || req.url || '';
     if (urlPath.includes('/berita/')) {
       const parts = urlPath.split('/berita/');
       if (parts.length > 1) {
-        const articleId = parts[1].split('?')[0].split('#')[0].trim();
+        const rawArticleId = parts[1].split('?')[0].split('#')[0].trim();
+        const articleId = rawArticleId.replace(/\.(jpg|png|webp|jpeg)$/i, '');
         if (articleId) {
           const data = getStoreData();
           const articles: NewsArticle[] = data.articles || [];
-          const article =
+          let article =
             articles.find((a) => a.id.toLowerCase() === articleId.toLowerCase()) ||
             articles.find((a) => a.id.toLowerCase().includes(articleId.toLowerCase()));
+
+          // Fetch directly from Firestore if missing from local memory/store
+          if (!article) {
+            try {
+              const articleDoc = await getDoc(doc(db, 'articles', articleId));
+              if (articleDoc.exists()) {
+                article = articleDoc.data() as NewsArticle;
+                if (article) {
+                  data.articles = [article, ...articles];
+                  saveStoreData(data);
+                }
+              }
+            } catch (err) {
+              console.error('Error fetching article from Firestore for meta tags:', err);
+            }
+          }
 
           if (article) {
             const protocol = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'https';
@@ -873,33 +921,45 @@ function injectMetaTags(html: string, req: express.Request): string {
             const fullUrl = `${protocol}://${host}${urlPath}`;
 
             const title = `${article.title} - ASQI NEWS.com`;
-            const cleanTitle = escapeHtmlAttr(title);
-            const cleanArticleTitle = escapeHtmlAttr(article.title);
-
-            let rawDesc = article.snippet || article.content.replace(/\r?\n+/g, ' ').trim();
+            let rawDesc = article.snippet || article.content.replace(/<[^>]*>/g, '').replace(/\r?\n+/g, ' ').trim();
             if (rawDesc.length > 200) {
               rawDesc = rawDesc.substring(0, 197) + '...';
             }
-            const cleanDesc = escapeHtmlAttr(rawDesc);
 
-            const cleanImg = `${protocol}://${host}/api/news/${article.id}/image`;
+            let cleanImg = article.image ? article.image.trim() : '';
+            let imgMimeType = 'image/jpeg';
 
-            html = html
-              .replace(/<title>.*?<\/title>/gi, `<title>${cleanTitle}</title>`)
-              .replace(/<meta name="title" content=".*?" \/>/gi, `<meta name="title" content="${cleanTitle}" />`)
-              .replace(/<meta name="description" content=".*?" \/>/gi, `<meta name="description" content="${cleanDesc}" />`)
-              .replace(/<meta property="og:type" content=".*?" \/>/gi, `<meta property="og:type" content="article" />`)
-              .replace(/<meta property="og:title" content=".*?" \/>/gi, `<meta property="og:title" content="${cleanArticleTitle}" />`)
-              .replace(/<meta property="og:description" content=".*?" \/>/gi, `<meta property="og:description" content="${cleanDesc}" />`)
-              .replace(/<meta property="og:image" content=".*?" \/>/gi, `<meta property="og:image" content="${cleanImg}" />`)
-              .replace(/<meta property="og:image:secure_url" content=".*?" \/>/gi, `<meta property="og:image:secure_url" content="${cleanImg}" />`)
-              .replace(/<meta property="og:image:type" content=".*?" \/>/gi, `<meta property="og:image:type" content="image/jpeg" />`)
-              .replace(/<meta property="og:image:width" content=".*?" \/>/gi, `<meta property="og:image:width" content="1200" />`)
-              .replace(/<meta property="og:image:height" content=".*?" \/>/gi, `<meta property="og:image:height" content="630" />`)
-              .replace(/<meta property="og:url" content=".*?" \/>/gi, `<meta property="og:url" content="${escapeHtmlAttr(fullUrl)}" />`)
-              .replace(/<meta property="twitter:title" content=".*?" \/>/gi, `<meta property="twitter:title" content="${cleanArticleTitle}" />`)
-              .replace(/<meta property="twitter:description" content=".*?" \/>/gi, `<meta property="twitter:description" content="${cleanDesc}" />`)
-              .replace(/<meta property="twitter:image" content=".*?" \/>/gi, `<meta property="twitter:image" content="${cleanImg}" />`);
+            if (cleanImg.startsWith('http://') || cleanImg.startsWith('https://')) {
+              // Direct external image URL
+              if (cleanImg.endsWith('.png')) imgMimeType = 'image/png';
+              if (cleanImg.endsWith('.webp')) imgMimeType = 'image/webp';
+            } else if (cleanImg.startsWith('data:image/')) {
+              if (cleanImg.includes('data:image/png')) imgMimeType = 'image/png';
+              cleanImg = `${protocol}://${host}/api/news/${article.id}/image.jpg`;
+            } else if (cleanImg) {
+              cleanImg = `${protocol}://${host}${cleanImg.startsWith('/') ? '' : '/'}${cleanImg}`;
+            } else {
+              cleanImg = `${protocol}://${host}/asqinews-logo.svg`;
+              imgMimeType = 'image/svg+xml';
+            }
+
+            html = html.replace(/<title>.*?<\/title>/gi, `<title>${escapeHtmlAttr(title)}</title>`);
+            html = setMetaTag(html, 'name', 'title', title);
+            html = setMetaTag(html, 'name', 'description', rawDesc);
+            html = setMetaTag(html, 'property', 'og:type', 'article');
+            html = setMetaTag(html, 'property', 'og:site_name', 'ASQI NEWS.com');
+            html = setMetaTag(html, 'property', 'og:title', article.title);
+            html = setMetaTag(html, 'property', 'og:description', rawDesc);
+            html = setMetaTag(html, 'property', 'og:image', cleanImg);
+            html = setMetaTag(html, 'property', 'og:image:secure_url', cleanImg);
+            html = setMetaTag(html, 'property', 'og:image:type', imgMimeType);
+            html = setMetaTag(html, 'property', 'og:image:width', '1200');
+            html = setMetaTag(html, 'property', 'og:image:height', '630');
+            html = setMetaTag(html, 'property', 'og:url', fullUrl);
+            html = setMetaTag(html, 'property', 'twitter:card', 'summary_large_image');
+            html = setMetaTag(html, 'property', 'twitter:title', article.title);
+            html = setMetaTag(html, 'property', 'twitter:description', rawDesc);
+            html = setMetaTag(html, 'property', 'twitter:image', cleanImg);
           }
         }
       }
@@ -927,7 +987,7 @@ async function startServer() {
         const url = req.originalUrl;
         let template = fs.readFileSync(path.resolve(process.cwd(), 'index.html'), 'utf-8');
         template = await vite.transformIndexHtml(url, template);
-        template = injectMetaTags(template, req);
+        template = await injectMetaTags(template, req);
         res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
       } catch (e) {
         vite.ssrFixStacktrace(e as Error);
@@ -937,12 +997,12 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get(['/admin', '/admin/*', '*'], (req, res, next) => {
+    app.get(['/admin', '/admin/*', '*'], async (req, res, next) => {
       if (req.originalUrl.startsWith('/api')) {
         return next();
       }
       let template = fs.readFileSync(path.join(distPath, 'index.html'), 'utf-8');
-      template = injectMetaTags(template, req);
+      template = await injectMetaTags(template, req);
       res.status(200).set({ 'Content-Type': 'text/html' }).send(template);
     });
   }
