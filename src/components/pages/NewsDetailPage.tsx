@@ -260,22 +260,63 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
             </div>
           )}
 
-          {/* Main Hero Image */}
+          {/* Main Hero Image Frame */}
           <div
             style={{
               width: '100%',
-              borderRadius: '8px',
+              borderRadius: '10px',
               overflow: 'hidden',
               marginBottom: '24px',
               backgroundColor: '#0f172a',
-              border: '1px solid #e2e8f0',
+              border: '1px solid #cbd5e1',
+              boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08)',
             }}
           >
-            <div style={{ maxHeight: '460px', overflow: 'hidden' }}>
+            <div
+              style={{
+                position: 'relative',
+                width: '100%',
+                minHeight: '260px',
+                maxHeight: '480px',
+                backgroundColor: '#0f172a',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+              }}
+            >
+              {/* Blurred backdrop fill for non-standard aspect ratios */}
+              <img
+                src={article.image}
+                alt=""
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  filter: 'blur(22px) brightness(0.5)',
+                  transform: 'scale(1.15)',
+                  pointerEvents: 'none',
+                }}
+              />
+              {/* Foreground clear image - fits 100% inside frame without cropping */}
               <img
                 src={article.image}
                 alt={article.title}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                style={{
+                  position: 'relative',
+                  zIndex: 1,
+                  maxWidth: '100%',
+                  maxHeight: '480px',
+                  width: 'auto',
+                  height: 'auto',
+                  objectFit: 'contain',
+                  display: 'block',
+                  margin: '0 auto',
+                }}
               />
             </div>
             {article.imageCaption && (
@@ -285,7 +326,7 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
                   backgroundColor: '#f8fafc',
                   borderTop: '1px solid #e2e8f0',
                   fontSize: '12px',
-                  color: '#64748b',
+                  color: '#475569',
                   fontStyle: 'italic',
                 }}
               >
@@ -444,25 +485,66 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
                   <figure
                     style={{
                       margin: '28px 0',
-                      backgroundColor: '#f8fafc',
-                      borderRadius: '8px',
+                      backgroundColor: '#0f172a',
+                      borderRadius: '10px',
                       overflow: 'hidden',
                       border: '1px solid #cbd5e1',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+                      boxShadow: '0 4px 10px rgba(0, 0, 0, 0.08)',
                     }}
                   >
-                    <img
-                      src={article.middleImage}
-                      alt={article.middleImageCaption || 'Gambar Sisipan Artikel'}
-                      style={{ width: '100%', maxHeight: '400px', objectFit: 'cover', display: 'block' }}
-                    />
+                    <div
+                      style={{
+                        position: 'relative',
+                        width: '100%',
+                        minHeight: '220px',
+                        maxHeight: '440px',
+                        backgroundColor: '#0f172a',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {/* Blurred backdrop */}
+                      <img
+                        src={article.middleImage}
+                        alt=""
+                        aria-hidden="true"
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          filter: 'blur(20px) brightness(0.5)',
+                          transform: 'scale(1.15)',
+                          pointerEvents: 'none',
+                        }}
+                      />
+                      <img
+                        src={article.middleImage}
+                        alt={article.middleImageCaption || 'Gambar Sisipan Artikel'}
+                        style={{
+                          position: 'relative',
+                          zIndex: 1,
+                          maxWidth: '100%',
+                          maxHeight: '440px',
+                          width: 'auto',
+                          height: 'auto',
+                          objectFit: 'contain',
+                          display: 'block',
+                          margin: '0 auto',
+                        }}
+                      />
+                    </div>
                     {article.middleImageCaption && (
                       <figcaption
                         style={{
                           padding: '10px 16px',
                           fontSize: '12px',
                           color: '#475569',
-                          backgroundColor: '#f1f5f9',
+                          backgroundColor: '#f8fafc',
                           borderTop: '1px solid #e2e8f0',
                           fontStyle: 'italic',
                         }}
