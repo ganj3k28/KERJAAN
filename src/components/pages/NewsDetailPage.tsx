@@ -46,6 +46,13 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
   const [relatedArticles, setRelatedArticles] = useState<NewsArticle[]>([]);
   const [isSaved, setIsSaved] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showAllPages, setShowAllPages] = useState(false);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setShowAllPages(false);
+  }, [article?.id]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -306,6 +313,9 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
             </div>
           )}
 
+          {/* Scroll anchor when changing article pages */}
+          <div id="article-content-top" />
+
           {/* Article Content Paragraphs & Paywall */}
           {(() => {
             const paragraphs = article.content.split('\n').filter((p) => p.trim() !== '');
@@ -398,9 +408,16 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
               );
             }
 
-            const middleIndex = article.middleImage ? Math.max(1, Math.floor(paragraphs.length / 2)) : paragraphs.length;
-            const firstPart = paragraphs.slice(0, middleIndex);
-            const secondPart = paragraphs.slice(middleIndex);
+            // PAGINATION CONFIGURATION (2 paragraphs per page for long news)
+            const PARAGRAPHS_PER_PAGE = 2;
+            const totalPages = Math.ceil(paragraphs.length / PARAGRAPHS_PER_PAGE);
+
+            // Determine visible paragraphs
+            let displayedParas = paragraphs;
+            if (totalPages > 1 && !showAllPages) {
+              const startIdx = (currentPage - 1) * PARAGRAPHS_PER_PAGE;
+              displayedParas = paragraphs.slice(startIdx, startIdx + PARAGRAPHS_PER_PAGE);
+            }
 
             const renderParagraph = (para: string, keyVal: string | number) => {
               const trimmed = para.trim();
@@ -420,10 +437,10 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
 
             return (
               <div style={{ fontSize: '16px', color: '#1e293b', lineHeight: 1.8, marginBottom: '28px' }}>
-                {firstPart.map((para, idx) => renderParagraph(para, idx))}
+                {displayedParas.map((para, idx) => renderParagraph(para, idx))}
 
-                {/* Inline Middle Image */}
-                {article.middleImage && (
+                {/* Inline Middle Image (Show on page 1 or when viewing all) */}
+                {article.middleImage && (currentPage === 1 || showAllPages) && (
                   <figure
                     style={{
                       margin: '28px 0',
@@ -457,18 +474,139 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
                 )}
 
                 {/* Middle Article Banner Ad */}
-                {article.articleAds?.middleAd?.enabled && (
+                {article.articleAds?.middleAd?.enabled && (currentPage === 1 || showAllPages) && (
                   <div style={{ margin: '24px 0' }}>
                     <AdBox ad={article.articleAds.middleAd} placement="article" />
                   </div>
                 )}
 
-                {secondPart.map((para, idx) => renderParagraph(para, `p2-${idx}`))}
-
                 {/* Bottom Article Banner Ad */}
-                {article.articleAds?.bottomAd?.enabled && (
+                {article.articleAds?.bottomAd?.enabled && (currentPage === totalPages || showAllPages) && (
                   <div style={{ marginTop: '28px', marginBottom: '20px' }}>
                     <AdBox ad={article.articleAds.bottomAd} placement="article" />
+                  </div>
+                )}
+
+                {/* ARTICLE PAGINATION BAR (Only appears if totalPages > 1) */}
+                {totalPages > 1 && (
+                  <div
+                    style={{
+                      marginTop: '28px',
+                      padding: '16px 20px',
+                      backgroundColor: '#f8fafc',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '12px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: '#334155' }}>
+                        Halaman <span style={{ color: '#E10600', fontSize: '15px' }}>{currentPage}</span> dari {totalPages}
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        {currentPage > 1 && !showAllPages && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCurrentPage((prev) => prev - 1);
+                              document.getElementById('article-content-top')?.scrollIntoView({ behavior: 'smooth' });
+                            }}
+                            style={{
+                              padding: '7px 14px',
+                              backgroundColor: '#ffffff',
+                              border: '1px solid #94a3b8',
+                              borderRadius: '6px',
+                              color: '#0f172a',
+                              fontSize: '13px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                            }}
+                          >
+                            ‹ Sebelumnya
+                          </button>
+                        )}
+
+                        {!showAllPages &&
+                          Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                            <button
+                              key={pageNum}
+                              type="button"
+                              onClick={() => {
+                                setCurrentPage(pageNum);
+                                document.getElementById('article-content-top')?.scrollIntoView({ behavior: 'smooth' });
+                              }}
+                              style={{
+                                padding: '6px 13px',
+                                backgroundColor: pageNum === currentPage ? '#08204D' : '#ffffff',
+                                color: pageNum === currentPage ? '#ffffff' : '#0f172a',
+                                border: pageNum === currentPage ? '1px solid #08204D' : '1px solid #cbd5e1',
+                                borderRadius: '6px',
+                                fontSize: '13px',
+                                fontWeight: pageNum === currentPage ? 800 : 600,
+                                cursor: 'pointer',
+                                minWidth: '36px',
+                                boxShadow: pageNum === currentPage ? '0 2px 4px rgba(8, 32, 77, 0.2)' : 'none',
+                              }}
+                            >
+                              {pageNum}
+                            </button>
+                          ))}
+
+                        {currentPage < totalPages && !showAllPages && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCurrentPage((prev) => prev + 1);
+                              document.getElementById('article-content-top')?.scrollIntoView({ behavior: 'smooth' });
+                            }}
+                            style={{
+                              padding: '7px 16px',
+                              backgroundColor: '#E10600',
+                              border: '1px solid #E10600',
+                              borderRadius: '6px',
+                              color: '#ffffff',
+                              fontSize: '13px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              boxShadow: '0 2px 6px rgba(225, 6, 0, 0.25)',
+                            }}
+                          >
+                            Halaman Selanjutnya ›
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '10px', display: 'flex', justifyContent: 'flex-end' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAllPages(!showAllPages);
+                          document.getElementById('article-content-top')?.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#0284c7',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          textDecoration: 'underline',
+                        }}
+                      >
+                        {showAllPages ? '📄 Baca Per Halaman (Paginated)' : '📜 Tampilkan Seluruh Teks Berita Sekaligus'}
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

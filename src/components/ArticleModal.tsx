@@ -22,6 +22,13 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
   const [relatedArticles, setRelatedArticles] = useState<NewsArticle[]>([]);
   const [isSaved, setIsSaved] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showAllPages, setShowAllPages] = useState(false);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setShowAllPages(false);
+  }, [article?.id]);
 
   useEffect(() => {
     if (article) {
@@ -358,9 +365,15 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
               );
             }
 
-            const middleIndex = article.middleImage ? Math.max(1, Math.floor(paragraphs.length / 2)) : paragraphs.length;
-            const firstPart = paragraphs.slice(0, middleIndex);
-            const secondPart = paragraphs.slice(middleIndex);
+            // PAGINATION CONFIGURATION (2 paragraphs per page for long news)
+            const PARAGRAPHS_PER_PAGE = 2;
+            const totalPages = Math.ceil(paragraphs.length / PARAGRAPHS_PER_PAGE);
+
+            let displayedParas = paragraphs;
+            if (totalPages > 1 && !showAllPages) {
+              const startIdx = (currentPage - 1) * PARAGRAPHS_PER_PAGE;
+              displayedParas = paragraphs.slice(startIdx, startIdx + PARAGRAPHS_PER_PAGE);
+            }
 
             const renderParagraph = (para: string, keyVal: string | number) => {
               const trimmed = para.trim();
@@ -380,11 +393,11 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
 
             return (
               <div style={{ fontSize: '15px', color: '#1e293b', lineHeight: 1.8, marginBottom: '28px' }}>
-                {/* First half of paragraphs */}
-                {firstPart.map((para, idx) => renderParagraph(para, idx))}
+                <div id="modal-article-top" />
+                {displayedParas.map((para, idx) => renderParagraph(para, idx))}
 
                 {/* Inline Middle Image (Gambar Sisipan Tengah) */}
-                {article.middleImage && (
+                {article.middleImage && (currentPage === 1 || showAllPages) && (
                   <figure
                     style={{
                       margin: '24px 0',
@@ -417,8 +430,119 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
                   </figure>
                 )}
 
-                {/* Second half of paragraphs */}
-                {secondPart.map((para, idx) => renderParagraph(para, `p2-${idx}`))}
+                {/* ARTICLE PAGINATION BAR (Only appears if totalPages > 1) */}
+                {totalPages > 1 && (
+                  <div
+                    style={{
+                      marginTop: '24px',
+                      padding: '14px 18px',
+                      backgroundColor: '#f8fafc',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
+                        Halaman <span style={{ color: '#E10600', fontSize: '14px' }}>{currentPage}</span> dari {totalPages}
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
+                        {currentPage > 1 && !showAllPages && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCurrentPage((prev) => prev - 1);
+                              document.getElementById('modal-article-top')?.scrollIntoView({ behavior: 'smooth' });
+                            }}
+                            style={{
+                              padding: '6px 12px',
+                              backgroundColor: '#ffffff',
+                              border: '1px solid #94a3b8',
+                              borderRadius: '6px',
+                              color: '#0f172a',
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            ‹ Sebelumnya
+                          </button>
+                        )}
+
+                        {!showAllPages &&
+                          Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                            <button
+                              key={pageNum}
+                              type="button"
+                              onClick={() => {
+                                setCurrentPage(pageNum);
+                                document.getElementById('modal-article-top')?.scrollIntoView({ behavior: 'smooth' });
+                              }}
+                              style={{
+                                padding: '5px 11px',
+                                backgroundColor: pageNum === currentPage ? '#08204D' : '#ffffff',
+                                color: pageNum === currentPage ? '#ffffff' : '#0f172a',
+                                border: pageNum === currentPage ? '1px solid #08204D' : '1px solid #cbd5e1',
+                                borderRadius: '6px',
+                                fontSize: '12px',
+                                fontWeight: pageNum === currentPage ? 800 : 600,
+                                cursor: 'pointer',
+                                minWidth: '32px',
+                              }}
+                            >
+                              {pageNum}
+                            </button>
+                          ))}
+
+                        {currentPage < totalPages && !showAllPages && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCurrentPage((prev) => prev + 1);
+                              document.getElementById('modal-article-top')?.scrollIntoView({ behavior: 'smooth' });
+                            }}
+                            style={{
+                              padding: '6px 14px',
+                              backgroundColor: '#E10600',
+                              border: '1px solid #E10600',
+                              borderRadius: '6px',
+                              color: '#ffffff',
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Halaman Selanjutnya ›
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '8px', display: 'flex', justifyContent: 'flex-end' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAllPages(!showAllPages);
+                          document.getElementById('modal-article-top')?.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#0284c7',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          textDecoration: 'underline',
+                        }}
+                      >
+                        {showAllPages ? '📄 Baca Per Halaman (Paginated)' : '📜 Tampilkan Seluruh Teks Berita Sekaligus'}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })()}
