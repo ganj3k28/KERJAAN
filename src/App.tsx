@@ -338,7 +338,6 @@ export default function App() {
             const art = d.data() as NewsArticle;
             if (art.category && art.category.trim().toLowerCase() === 'finansial') {
               const updated = { ...art, category: 'Berita Terbaru' };
-              // Auto update Firestore doc so database is cleaned
               setDoc(doc(db, 'articles', d.id), { category: 'Berita Terbaru' }, { merge: true }).catch(() => {});
               return updated;
             }
@@ -355,7 +354,8 @@ export default function App() {
           setCarouselSlides(slides.slice(0, 5));
         },
         (error) => {
-          console.warn('Firestore articles snapshot listener error:', error);
+          console.warn('Firestore articles quota or connection warning:', error);
+          if (unsubArticles) { unsubArticles(); unsubArticles = null; }
         }
       );
 
@@ -365,7 +365,8 @@ export default function App() {
           setInfographics(snapshot.docs.map((d) => d.data() as Infographic));
         },
         (error) => {
-          console.warn('Firestore infographics snapshot listener error:', error);
+          console.warn('Firestore infographics listener notice:', error);
+          if (unsubInfo) { unsubInfo(); unsubInfo = null; }
         }
       );
 
@@ -375,7 +376,8 @@ export default function App() {
           setDataboksItems(snapshot.docs.map((d) => d.data() as DataboksItem));
         },
         (error) => {
-          console.warn('Firestore databoks snapshot listener error:', error);
+          console.warn('Firestore databoks listener notice:', error);
+          if (unsubData) { unsubData(); unsubData = null; }
         }
       );
 
@@ -391,7 +393,8 @@ export default function App() {
           }
         },
         (error) => {
-          console.warn('Firestore maintenance snapshot listener error:', error);
+          console.warn('Firestore maintenance listener notice:', error);
+          if (unsubMaint) { unsubMaint(); unsubMaint = null; }
         }
       );
 
@@ -406,7 +409,8 @@ export default function App() {
           }
         },
         (error) => {
-          console.warn('Firestore categories snapshot listener error:', error);
+          console.warn('Firestore categories listener notice:', error);
+          if (unsubCats) { unsubCats(); unsubCats = null; }
         }
       );
 
@@ -419,7 +423,8 @@ export default function App() {
           }
         },
         (error) => {
-          console.warn('Firestore header snapshot listener error:', error);
+          console.warn('Firestore header listener notice:', error);
+          if (unsubHeader) { unsubHeader(); unsubHeader = null; }
         }
       );
 
@@ -438,7 +443,8 @@ export default function App() {
           }
         },
         (error) => {
-          console.warn('Firestore about_asqi snapshot listener error:', error);
+          console.warn('Firestore about_asqi listener notice:', error);
+          if (unsubAbout) { unsubAbout(); unsubAbout = null; }
         }
       );
 
@@ -451,48 +457,19 @@ export default function App() {
           }
         },
         (error) => {
-          console.warn('Firestore global_ads snapshot listener error:', error);
+          console.warn('Firestore global_ads listener notice:', error);
+          if (unsubAds) { unsubAds(); unsubAds = null; }
         }
       );
     } catch (err) {
-      console.error('Firestore real-time subscription notice:', err);
+      console.warn('Firestore real-time subscription notice:', err);
     }
 
-    // Also fetch maintenance, about-asqi, and global-ads from REST API
-    fetch('/api/global-ads')
-      .then((r) => r.json())
-      .then((res) => {
-        if (res?.success && res.ads) {
-          setGlobalAds(res.ads);
-        }
-      })
-      .catch(() => {});
-
-    // Also fetch maintenance and about-asqi from REST API
-    fetch('/api/maintenance')
-      .then((r) => r.json())
-      .then((res) => {
-        if (res?.success && res.maintenance) {
-          setMaintenance({
-            enabled: !!res.maintenance.enabled,
-            message: res.maintenance.message || 'Website ASQI NEWS sedang dalam pemeliharaan sistem rutin.',
-          });
-        }
-      })
-      .catch(() => {});
-
-    fetch('/api/about-asqi')
-      .then((r) => r.json())
-      .then((res) => {
-        if (res?.success && res.aboutAsqi) {
-          setAboutAsqiData(res.aboutAsqi);
-        }
-      })
-      .catch(() => {});
-
-    const interval = setInterval(() => {
+    const pollInterval = setInterval(() => {
       fetchBackendData();
-    }, 3000);
+      fetchCategories();
+      fetchHeaderSettings();
+    }, 5000);
 
     const handleFocus = () => {
       fetchBackendData();
@@ -502,6 +479,7 @@ export default function App() {
     window.addEventListener('visibilitychange', handleFocus);
 
     return () => {
+      clearInterval(pollInterval);
       if (unsubArticles) unsubArticles();
       if (unsubInfo) unsubInfo();
       if (unsubData) unsubData();
@@ -510,7 +488,6 @@ export default function App() {
       if (unsubHeader) unsubHeader();
       if (unsubAbout) unsubAbout();
       if (unsubAds) unsubAds();
-      clearInterval(interval);
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('visibilitychange', handleFocus);
     };
