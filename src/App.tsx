@@ -1,7 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { collection, onSnapshot, doc, setDoc } from 'firebase/firestore';
 import { Wrench, Shield, Lock, AlertTriangle, RefreshCw } from 'lucide-react';
-import { db } from './lib/firebase';
 import { NewsArticle, Infographic, DataboksItem, VideoItem, HeaderSettings, SubscriberUser, AboutAsqiData, GlobalAdsSettings } from './types';
 import { initialData } from './initialData';
 import { Header } from './components/Header';
@@ -304,166 +302,17 @@ export default function App() {
     );
 
     fetch(`/api/news/${art.id}/view`, { method: 'POST' }).catch(() => {});
-    try {
-      setDoc(doc(db, 'articles', art.id), { views: newViews }, { merge: true }).catch(() => {});
-    } catch {}
 
     window.history.pushState({}, '', `/berita/${art.id}`);
     setCurrentPath(`/berita/${art.id}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  // Initial fetch + Auto sync every 3 seconds & on tab focus + Real-time Firestore Cloud Database listener
+  // Initial fetch + Auto sync every 5 seconds & on tab focus
   useEffect(() => {
     fetchBackendData();
-
     fetchCategories();
     fetchHeaderSettings();
-
-    // Live Firebase Firestore listener across all browsers & devices
-    let unsubArticles: (() => void) | null = null;
-    let unsubInfo: (() => void) | null = null;
-    let unsubData: (() => void) | null = null;
-    let unsubMaint: (() => void) | null = null;
-    let unsubCats: (() => void) | null = null;
-    let unsubHeader: (() => void) | null = null;
-    let unsubAbout: (() => void) | null = null;
-    let unsubAds: (() => void) | null = null;
-
-    try {
-      unsubArticles = onSnapshot(
-        collection(db, 'articles'),
-        (snapshot) => {
-          const arts = snapshot.docs.map((d) => {
-            const art = d.data() as NewsArticle;
-            if (art.category && art.category.trim().toLowerCase() === 'finansial') {
-              const updated = { ...art, category: 'Berita Terbaru' };
-              setDoc(doc(db, 'articles', d.id), { category: 'Berita Terbaru' }, { merge: true }).catch(() => {});
-              return updated;
-            }
-            return art;
-          });
-          setAllArticles(arts);
-          const featured = arts.filter((a) => a.isFeatured);
-          let slides = featured.length > 0 ? featured : arts;
-          if (slides.length < 5 && arts.length > 0) {
-            const existingIds = new Set(slides.map((a) => a.id));
-            const extra = arts.filter((a) => !existingIds.has(a.id));
-            slides = [...slides, ...extra];
-          }
-          setCarouselSlides(slides.slice(0, 5));
-        },
-        (error) => {
-          console.warn('Firestore articles quota or connection warning:', error);
-          if (unsubArticles) { unsubArticles(); unsubArticles = null; }
-        }
-      );
-
-      unsubInfo = onSnapshot(
-        collection(db, 'infographics'),
-        (snapshot) => {
-          setInfographics(snapshot.docs.map((d) => d.data() as Infographic));
-        },
-        (error) => {
-          console.warn('Firestore infographics listener notice:', error);
-          if (unsubInfo) { unsubInfo(); unsubInfo = null; }
-        }
-      );
-
-      unsubData = onSnapshot(
-        collection(db, 'databoks'),
-        (snapshot) => {
-          setDataboksItems(snapshot.docs.map((d) => d.data() as DataboksItem));
-        },
-        (error) => {
-          console.warn('Firestore databoks listener notice:', error);
-          if (unsubData) { unsubData(); unsubData = null; }
-        }
-      );
-
-      unsubMaint = onSnapshot(
-        doc(db, 'settings', 'maintenance'),
-        (snapshot) => {
-          if (snapshot.exists()) {
-            const data = snapshot.data();
-            setMaintenance({
-              enabled: !!data.enabled,
-              message: data.message || 'Website ASQI NEWS sedang dalam pemeliharaan sistem rutin.',
-            });
-          }
-        },
-        (error) => {
-          console.warn('Firestore maintenance listener notice:', error);
-          if (unsubMaint) { unsubMaint(); unsubMaint = null; }
-        }
-      );
-
-      unsubCats = onSnapshot(
-        doc(db, 'settings', 'categories'),
-        (snapshot) => {
-          if (snapshot.exists()) {
-            const data = snapshot.data();
-            if (Array.isArray(data?.list) && data.list.length > 0) {
-              setCategories(data.list);
-            }
-          }
-        },
-        (error) => {
-          console.warn('Firestore categories listener notice:', error);
-          if (unsubCats) { unsubCats(); unsubCats = null; }
-        }
-      );
-
-      unsubHeader = onSnapshot(
-        doc(db, 'settings', 'header'),
-        (snapshot) => {
-          if (snapshot.exists()) {
-            const data = snapshot.data() as HeaderSettings;
-            setHeaderSettings(data);
-          }
-        },
-        (error) => {
-          console.warn('Firestore header listener notice:', error);
-          if (unsubHeader) { unsubHeader(); unsubHeader = null; }
-        }
-      );
-
-      unsubAbout = onSnapshot(
-        doc(db, 'settings', 'about_asqi'),
-        (snapshot) => {
-          if (snapshot.exists()) {
-            const data = snapshot.data() as AboutAsqiData;
-            setAboutAsqiData({
-              logoUrl: data.logoUrl || '/asqi-logo-about.svg',
-              targetUrl: data.targetUrl || 'https://asqi.or.id/',
-              title: data.title || 'TENTANG ASQI',
-              companyName: data.companyName || 'Asosiasi Service Quality Indonesia (ASQI)',
-              description: data.description || '',
-            });
-          }
-        },
-        (error) => {
-          console.warn('Firestore about_asqi listener notice:', error);
-          if (unsubAbout) { unsubAbout(); unsubAbout = null; }
-        }
-      );
-
-      unsubAds = onSnapshot(
-        doc(db, 'settings', 'global_ads'),
-        (snapshot) => {
-          if (snapshot.exists()) {
-            const data = snapshot.data() as GlobalAdsSettings;
-            setGlobalAds(data);
-          }
-        },
-        (error) => {
-          console.warn('Firestore global_ads listener notice:', error);
-          if (unsubAds) { unsubAds(); unsubAds = null; }
-        }
-      );
-    } catch (err) {
-      console.warn('Firestore real-time subscription notice:', err);
-    }
 
     const pollInterval = setInterval(() => {
       fetchBackendData();
@@ -480,18 +329,10 @@ export default function App() {
 
     return () => {
       clearInterval(pollInterval);
-      if (unsubArticles) unsubArticles();
-      if (unsubInfo) unsubInfo();
-      if (unsubData) unsubData();
-      if (unsubMaint) unsubMaint();
-      if (unsubCats) unsubCats();
-      if (unsubHeader) unsubHeader();
-      if (unsubAbout) unsubAbout();
-      if (unsubAds) unsubAds();
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('visibilitychange', handleFocus);
     };
-  }, [fetchBackendData]);
+  }, [fetchBackendData, fetchCategories, fetchHeaderSettings]);
 
   // Filter articles according to category and search query
   const filteredArticles = allArticles.filter((art) => {

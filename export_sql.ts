@@ -6,7 +6,12 @@ function escapeSql(str: any) {
   if (typeof str === 'boolean') return str ? '1' : '0';
   if (typeof str === 'number') return str;
   if (typeof str === 'object') str = JSON.stringify(str);
-  return "'" + String(str).replace(/\\/g, '\\\\').replace(/'/g, "''").replace(/\r/g, '\\r').replace(/\n/g, '\\n') + "'";
+  const escaped = String(str)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "''")
+    .replace(/\r/g, '')
+    .replace(/\n/g, '\\n');
+  return "'" + escaped + "'";
 }
 
 const newsStorePath = path.join(process.cwd(), 'data', 'newsStore.json');

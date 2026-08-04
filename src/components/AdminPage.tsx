@@ -30,8 +30,6 @@ import {
   Megaphone,
   Image as ImageIcon,
 } from 'lucide-react';
-import { doc, setDoc, deleteDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
 import { NewsArticle, Infographic, DataboksItem, AdminUser, AdminRole, HeaderSettings, HeaderQuickLink, GlobalAdsSettings, AdBanner, ArticleAdsSettings } from '../types';
 import { initialData } from '../initialData';
 import { Logo } from './Logo';
@@ -142,11 +140,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     setIsSavingAds(true);
     setMsg(null);
     try {
-      await setDoc(doc(db, 'settings', 'global_ads'), {
-        ...globalAds,
-        updatedAt: new Date().toISOString(),
-      }).catch(() => {});
-
       const res = await fetch('/api/global-ads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -154,7 +147,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
       }).then((r) => r.json());
 
       if (res?.success) {
-        setMsg({ type: 'success', text: 'Pengaturan Iklan Halaman Depan & Sidebar berhasil disimpan dan disinkronkan secara live!' });
+        setMsg({ type: 'success', text: 'Pengaturan Iklan Halaman Depan & Sidebar berhasil disimpan!' });
       } else {
         setMsg({ type: 'error', text: res?.message || 'Gagal menyimpan pengaturan iklan' });
       }
@@ -178,8 +171,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({
         description: aboutDescription,
         updatedAt: new Date().toISOString(),
       };
-
-      await setDoc(doc(db, 'settings', 'about_asqi'), payload).catch(() => {});
 
       const res = await fetch('/api/about-asqi', {
         method: 'POST',
@@ -308,14 +299,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   const handleToggleMaintenance = async (targetState: boolean) => {
     setIsSavingMaintenance(true);
     try {
-      // 1. Save directly to Firestore Cloud Database
-      await setDoc(doc(db, 'settings', 'maintenance'), {
-        enabled: targetState,
-        message: maintenanceMessage,
-        updatedAt: new Date().toISOString(),
-      }).catch(() => {});
-
-      // 2. Save via REST API
       await fetch('/api/maintenance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -543,18 +526,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     let firestoreSaved = false;
     let apiSaved = false;
 
-    // Clean article object for Firestore by safely removing undefined fields
-    const cleanDoc = JSON.parse(JSON.stringify(fullArticle));
-
-    // 1. Direct write to Firebase Firestore Cloud Database (Instant, real-time sync)
-    try {
-      await setDoc(doc(db, 'articles', articleId), cleanDoc);
-      firestoreSaved = true;
-    } catch (fsErr) {
-      console.warn('Direct Firestore save notice:', fsErr);
-    }
-
-    // 2. Call REST API Server
+    // Call REST API Server
     try {
       let response;
       if (editingArticleId) {
@@ -654,14 +626,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   const handleDeleteArticle = async (id: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus artikel berita ini dari server & database?')) return;
     try {
-      // 1. Direct delete from Firebase Firestore Cloud DB
-      try {
-        await deleteDoc(doc(db, 'articles', id));
-      } catch (fsErr) {
-        console.warn('Direct Firestore delete notice:', fsErr);
-      }
-
-      // 2. Delete from REST API Server
       const res = await fetch(`/api/news/${id}`, { method: 'DELETE' }).then((r) => r.json()).catch(() => null);
 
       if (res?.success || true) {
@@ -722,9 +686,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   const handleDeleteInfographic = async (id: string) => {
     if (!confirm('Hapus infografik ini?')) return;
     try {
-      try {
-        await deleteDoc(doc(db, 'infographics', id));
-      } catch {}
       const res = await fetch(`/api/infographics/${id}`, { method: 'DELETE' }).then((r) => r.json()).catch(() => null);
       setMsg({ type: 'success', text: 'Infografik berhasil dihapus' });
       await onRefreshData();
@@ -760,9 +721,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   const handleDeleteDataboks = async (id: string) => {
     if (!confirm('Hapus item databoks ini?')) return;
     try {
-      try {
-        await deleteDoc(doc(db, 'databoks', id));
-      } catch {}
       const res = await fetch(`/api/databoks/${id}`, { method: 'DELETE' }).then((r) => r.json()).catch(() => null);
       setMsg({ type: 'success', text: 'Item databoks berhasil dihapus' });
       await onRefreshData();
