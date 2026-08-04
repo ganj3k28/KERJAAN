@@ -402,13 +402,25 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
             const firstPart = paragraphs.slice(0, middleIndex);
             const secondPart = paragraphs.slice(middleIndex);
 
+            const renderParagraph = (para: string, keyVal: string | number) => {
+              const trimmed = para.trim();
+              if (
+                trimmed.startsWith('<h2') ||
+                trimmed.startsWith('<h3') ||
+                trimmed.startsWith('<blockquote') ||
+                trimmed.startsWith('<ul') ||
+                trimmed.startsWith('<ol') ||
+                trimmed.startsWith('<hr') ||
+                trimmed.startsWith('<div')
+              ) {
+                return <div key={keyVal} style={{ marginBottom: '18px' }} dangerouslySetInnerHTML={{ __html: trimmed }} />;
+              }
+              return <p key={keyVal} style={{ marginBottom: '18px' }} dangerouslySetInnerHTML={{ __html: trimmed }} />;
+            };
+
             return (
               <div style={{ fontSize: '16px', color: '#1e293b', lineHeight: 1.8, marginBottom: '28px' }}>
-                {firstPart.map((para, idx) => (
-                  <p key={idx} style={{ marginBottom: '18px' }}>
-                    {para}
-                  </p>
-                ))}
+                {firstPart.map((para, idx) => renderParagraph(para, idx))}
 
                 {/* Inline Middle Image */}
                 {article.middleImage && (
@@ -451,11 +463,7 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
                   </div>
                 )}
 
-                {secondPart.map((para, idx) => (
-                  <p key={`p2-${idx}`} style={{ marginBottom: '18px' }}>
-                    {para}
-                  </p>
-                ))}
+                {secondPart.map((para, idx) => renderParagraph(para, `p2-${idx}`))}
 
                 {/* Bottom Article Banner Ad */}
                 {article.articleAds?.bottomAd?.enabled && (

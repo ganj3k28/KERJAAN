@@ -362,14 +362,26 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
             const firstPart = paragraphs.slice(0, middleIndex);
             const secondPart = paragraphs.slice(middleIndex);
 
+            const renderParagraph = (para: string, keyVal: string | number) => {
+              const trimmed = para.trim();
+              if (
+                trimmed.startsWith('<h2') ||
+                trimmed.startsWith('<h3') ||
+                trimmed.startsWith('<blockquote') ||
+                trimmed.startsWith('<ul') ||
+                trimmed.startsWith('<ol') ||
+                trimmed.startsWith('<hr') ||
+                trimmed.startsWith('<div')
+              ) {
+                return <div key={keyVal} style={{ marginBottom: '16px' }} dangerouslySetInnerHTML={{ __html: trimmed }} />;
+              }
+              return <p key={keyVal} style={{ marginBottom: '16px' }} dangerouslySetInnerHTML={{ __html: trimmed }} />;
+            };
+
             return (
               <div style={{ fontSize: '15px', color: '#1e293b', lineHeight: 1.8, marginBottom: '28px' }}>
                 {/* First half of paragraphs */}
-                {firstPart.map((para, idx) => (
-                  <p key={idx} style={{ marginBottom: '16px' }}>
-                    {para}
-                  </p>
-                ))}
+                {firstPart.map((para, idx) => renderParagraph(para, idx))}
 
                 {/* Inline Middle Image (Gambar Sisipan Tengah) */}
                 {article.middleImage && (
@@ -406,11 +418,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
                 )}
 
                 {/* Second half of paragraphs */}
-                {secondPart.map((para, idx) => (
-                  <p key={`p2-${idx}`} style={{ marginBottom: '16px' }}>
-                    {para}
-                  </p>
-                ))}
+                {secondPart.map((para, idx) => renderParagraph(para, `p2-${idx}`))}
               </div>
             );
           })()}

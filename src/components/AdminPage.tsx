@@ -36,6 +36,7 @@ import { NewsArticle, Infographic, DataboksItem, AdminUser, AdminRole, HeaderSet
 import { initialData } from '../initialData';
 import { Logo } from './Logo';
 import { ImageUploadInput } from './ImageUploadInput';
+import { NewsRichEditor } from './NewsRichEditor';
 
 const DEFAULT_ADMIN_USERS: AdminUser[] = [
   { id: 'usr-1', username: 'admin', name: 'Super Admin ASQI', role: 'superadmin' },
@@ -1498,16 +1499,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                 </div>
 
                 <div style={{ gridColumn: '1 / -1' }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
-                    Isi Lengkap Berita (Paragraf) *
-                  </label>
-                  <textarea
-                    rows={6}
-                    required
+                  <NewsRichEditor
                     value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    placeholder="Tulis artikel berita secara lengkap di sini..."
-                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#ffffff', fontSize: '14px', lineHeight: 1.6 }}
+                    onChange={setContent}
+                    label="Isi Lengkap Berita (Naskah Redaksi & Format Rich Text)"
+                    placeholder="Tulis artikel berita secara lengkap di sini. Gunakan tombol toolbar di atas untuk cetak tebal, miring, sub-judul, kutipan, atau daftar poin..."
                   />
                 </div>
 
