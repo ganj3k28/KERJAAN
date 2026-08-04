@@ -332,7 +332,16 @@ export default function App() {
 
     try {
       unsubArticles = onSnapshot(collection(db, 'articles'), (snapshot) => {
-        const arts = snapshot.docs.map((d) => d.data() as NewsArticle);
+        const arts = snapshot.docs.map((d) => {
+          const art = d.data() as NewsArticle;
+          if (art.category && art.category.trim().toLowerCase() === 'finansial') {
+            const updated = { ...art, category: 'Berita Terbaru' };
+            // Auto update Firestore doc so database is cleaned
+            setDoc(doc(db, 'articles', d.id), { category: 'Berita Terbaru' }, { merge: true }).catch(() => {});
+            return updated;
+          }
+          return art;
+        });
         setAllArticles(arts);
         const featured = arts.filter((a) => a.isFeatured);
         let slides = featured.length > 0 ? featured : arts;
@@ -1228,7 +1237,7 @@ export default function App() {
             <ul style={{ listStyle: 'none', fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <li><a href="#telaah" onClick={() => handleClearFilter()} style={{ color: '#94a3b8' }}>Telaah &amp; Sorot</a></li>
               <li><a href="#analisis" onClick={() => setActiveCategory('Analisis Data')}>Analisis Data &amp; Databoks</a></li>
-              <li><a href="#finansial" onClick={() => setActiveCategory('Finansial')}>Finansial &amp; Pasarmodal</a></li>
+              <li><a href="#beritaterbaru" onClick={() => setActiveCategory('Berita Terbaru')}>Berita Terbaru &amp; Terkini</a></li>
               <li><a href="#otomotif" onClick={() => setActiveCategory('Otomotif')}>Otomotif &amp; Industri</a></li>
             </ul>
           </div>

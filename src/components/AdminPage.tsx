@@ -472,12 +472,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     }
   };
 
-  const fillQuickLogin = (uname: string, pass: string) => {
-    setLoginUsername(uname);
-    setLoginPassword(pass);
-    setLoginError('');
-  };
-
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('asqi_admin_user');
@@ -997,52 +991,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({
             </button>
           </form>
 
-          {/* Demo User Credential Presets */}
-          <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #334155' }}>
-            <div style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', marginBottom: '10px', textAlign: 'center' }}>
-              KLIK PILIH AKUN DEMO PERAN / HAK AKSES:
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <button
-                type="button"
-                onClick={() => fillQuickLogin('admin', 'admin123')}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: '#0f172a', border: '1px solid #3b82f6', borderRadius: '6px', color: '#ffffff', cursor: 'pointer', textAlign: 'left', fontSize: '12px' }}
-              >
-                <div>
-                  <strong style={{ color: '#a78bfa', display: 'block' }}>👑 Super Admin (admin)</strong>
-                  <span style={{ color: '#94a3b8', fontSize: '11px' }}>Akses penuh: Berita, Kategori, Insight, User &amp; Maintenance</span>
-                </div>
-                <span style={{ fontSize: '11px', backgroundColor: '#334155', color: '#cbd5e1', padding: '2px 8px', borderRadius: '4px' }}>Pilih Akun</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => fillQuickLogin('editor', 'editor123')}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: '#0f172a', border: '1px solid #0284c7', borderRadius: '6px', color: '#ffffff', cursor: 'pointer', textAlign: 'left', fontSize: '12px' }}
-              >
-                <div>
-                  <strong style={{ color: '#38bdf8', display: 'block' }}>✏️ Chief Editor (editor)</strong>
-                  <span style={{ color: '#94a3b8', fontSize: '11px' }}>Kelola Berita, Kategori, Infografik, Databoks</span>
-                </div>
-                <span style={{ fontSize: '11px', backgroundColor: '#334155', color: '#cbd5e1', padding: '2px 8px', borderRadius: '4px' }}>Pilih Akun</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => fillQuickLogin('jurnalis', 'jurnalis123')}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: '#0f172a', border: '1px solid #10b981', borderRadius: '6px', color: '#ffffff', cursor: 'pointer', textAlign: 'left', fontSize: '12px' }}
-              >
-                <div>
-                  <strong style={{ color: '#34d399', display: 'block' }}>✍️ Jurnalis Senior (jurnalis)</strong>
-                  <span style={{ color: '#94a3b8', fontSize: '11px' }}>Hak akses menerbitkan &amp; me-review berita</span>
-                </div>
-                <span style={{ fontSize: '11px', backgroundColor: '#334155', color: '#cbd5e1', padding: '2px 8px', borderRadius: '4px' }}>Pilih Akun</span>
-              </button>
-            </div>
-          </div>
-
           {/* Navigation back */}
-          <div style={{ marginTop: '20px', textAlign: 'center' }}>
+          <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #334155', textAlign: 'center' }}>
             <button
               onClick={onNavigateHome}
               style={{ background: 'none', border: 'none', color: '#38bdf8', fontSize: '13px', cursor: 'pointer', textDecoration: 'underline' }}

@@ -121,12 +121,12 @@ export const initialData: InitialData = {
     {
       id: 'art-5',
       title: 'Daftar Saham Pembagi Dividen Jumbo ADRO, ANTM dan BBCA, Intip Rekomendasi Analis',
-      category: 'Finansial',
+      category: 'Berita Terbaru',
       publishedAt: '29 JULI 2026, 19.30',
       views: 4500,
       snippet: 'Sejumlah emiten papan atas menjadwalkan pembagian dividen interim dengan yield menarik di kuartal ketiga.',
       content: `Pasar modal Indonesia disambut sentimen positif dari pengumuman dividen interim emiten bluechip.\n\nPT Adaro Energy Indonesia Tbk (ADRO), PT Aneka Tambang Tbk (ANTM), dan PT Bank Central Asia Tbk (BBCA) siap membagikan sebagian keuntungan bersih tahun buku 2026 kepada para pemegang saham.\n\nAnalis sekuritas merekomendasikan strategi akumulasi beli secara bertahap menjelang kumulatif date (cum date) untuk mengamankan imbal hasil dividen yang diproyeksikan melebihi tingkat inflasi tahunan.`,
-      author: 'Analis Finansial',
+      author: 'Analis Ekonomi',
       image: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=300&q=80',
       isPopular: true,
       tags: ['Saham', 'Dividen', 'BBCA', 'ADRO', 'ANTM']
@@ -134,7 +134,7 @@ export const initialData: InitialData = {
     {
       id: 'art-6',
       title: 'Sembcorp Utilities Beri Sinyal Akuisisi 20% Saham Entitas Prajogo (TPIA)',
-      category: 'Finansial',
+      category: 'Berita Terbaru',
       publishedAt: '29 JULI 2026, 19.15',
       views: 3820,
       snippet: 'Raksasa energi asal Singapura menyatakan ketertarikan memperluas portofolio energi terbarukan di Indonesia.',
@@ -142,7 +142,7 @@ export const initialData: InitialData = {
       author: 'Tim Keuangan',
       image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=300&q=80',
       isPopular: true,
-      tags: ['TPIA', 'Sembcorp', 'Finansial', 'Akuisisi']
+      tags: ['TPIA', 'Sembcorp', 'Bisnis', 'Akuisisi']
     },
     {
       id: 'art-7',
@@ -173,7 +173,7 @@ export const initialData: InitialData = {
     {
       id: 'art-9',
       title: 'Beda Nasib 4 Investor Milik Singapura, Malaysia, RI Kala Rugi Investasi Startup',
-      category: 'Finansial',
+      category: 'Berita Terbaru',
       publishedAt: '29 JULI 2026, 16.20',
       views: 2780,
       snippet: 'Perbandingan strategi evaluasi aset dan manajemen risiko dari sovereign wealth fund regional menghadapi siklus tech winter.',
@@ -181,7 +181,7 @@ export const initialData: InitialData = {
       author: 'Maya Indah',
       image: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=300&q=80',
       isPopular: true,
-      tags: ['Finansial', 'Startup', 'Ventura', 'Investasi']
+      tags: ['Bisnis', 'Startup', 'Ventura', 'Investasi']
     }
   ],
   infographics: [
