@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -8,6 +11,7 @@ import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, getDoc } fro
 import firebaseConfig from './firebase-applet-config.json';
 import { initialData } from './src/initialData';
 import { AdminUser, NewsArticle, Infographic, DataboksItem } from './src/types';
+import { testAndInitMysql } from './src/lib/mysql';
 
 const app = express();
 const PORT = 3000;
@@ -1197,6 +1201,10 @@ async function injectMetaTags(html: string, req: express.Request): Promise<strin
 
 // Vite Middleware for Development & SPA Fallback
 async function startServer() {
+  await testAndInitMysql().catch((err) => {
+    console.warn('MySQL auto init info:', err?.message || err);
+  });
+
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },
