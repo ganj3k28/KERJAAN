@@ -331,81 +331,129 @@ export default function App() {
     let unsubAds: (() => void) | null = null;
 
     try {
-      unsubArticles = onSnapshot(collection(db, 'articles'), (snapshot) => {
-        const arts = snapshot.docs.map((d) => {
-          const art = d.data() as NewsArticle;
-          if (art.category && art.category.trim().toLowerCase() === 'finansial') {
-            const updated = { ...art, category: 'Berita Terbaru' };
-            // Auto update Firestore doc so database is cleaned
-            setDoc(doc(db, 'articles', d.id), { category: 'Berita Terbaru' }, { merge: true }).catch(() => {});
-            return updated;
-          }
-          return art;
-        });
-        setAllArticles(arts);
-        const featured = arts.filter((a) => a.isFeatured);
-        let slides = featured.length > 0 ? featured : arts;
-        if (slides.length < 5 && arts.length > 0) {
-          const existingIds = new Set(slides.map((a) => a.id));
-          const extra = arts.filter((a) => !existingIds.has(a.id));
-          slides = [...slides, ...extra];
-        }
-        setCarouselSlides(slides.slice(0, 5));
-      });
-
-      unsubInfo = onSnapshot(collection(db, 'infographics'), (snapshot) => {
-        setInfographics(snapshot.docs.map((d) => d.data() as Infographic));
-      });
-
-      unsubData = onSnapshot(collection(db, 'databoks'), (snapshot) => {
-        setDataboksItems(snapshot.docs.map((d) => d.data() as DataboksItem));
-      });
-
-      unsubMaint = onSnapshot(doc(db, 'settings', 'maintenance'), (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.data();
-          setMaintenance({
-            enabled: !!data.enabled,
-            message: data.message || 'Website ASQI NEWS sedang dalam pemeliharaan sistem rutin.',
+      unsubArticles = onSnapshot(
+        collection(db, 'articles'),
+        (snapshot) => {
+          const arts = snapshot.docs.map((d) => {
+            const art = d.data() as NewsArticle;
+            if (art.category && art.category.trim().toLowerCase() === 'finansial') {
+              const updated = { ...art, category: 'Berita Terbaru' };
+              // Auto update Firestore doc so database is cleaned
+              setDoc(doc(db, 'articles', d.id), { category: 'Berita Terbaru' }, { merge: true }).catch(() => {});
+              return updated;
+            }
+            return art;
           });
-        }
-      });
-
-      unsubCats = onSnapshot(doc(db, 'settings', 'categories'), (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.data();
-          if (Array.isArray(data?.list) && data.list.length > 0) {
-            setCategories(data.list);
+          setAllArticles(arts);
+          const featured = arts.filter((a) => a.isFeatured);
+          let slides = featured.length > 0 ? featured : arts;
+          if (slides.length < 5 && arts.length > 0) {
+            const existingIds = new Set(slides.map((a) => a.id));
+            const extra = arts.filter((a) => !existingIds.has(a.id));
+            slides = [...slides, ...extra];
           }
+          setCarouselSlides(slides.slice(0, 5));
+        },
+        (error) => {
+          console.warn('Firestore articles snapshot listener error:', error);
         }
-      });
+      );
 
-      unsubHeader = onSnapshot(doc(db, 'settings', 'header'), (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.data() as HeaderSettings;
-          setHeaderSettings(data);
+      unsubInfo = onSnapshot(
+        collection(db, 'infographics'),
+        (snapshot) => {
+          setInfographics(snapshot.docs.map((d) => d.data() as Infographic));
+        },
+        (error) => {
+          console.warn('Firestore infographics snapshot listener error:', error);
         }
-      });
+      );
 
-      unsubAbout = onSnapshot(doc(db, 'settings', 'about_asqi'), (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.data() as AboutAsqiData;
-          setAboutAsqiData({
-            logoUrl: data.logoUrl || '/asqi-logo-about.svg',
-            targetUrl: data.targetUrl || 'https://asqi.or.id/',
-            title: data.title || 'TENTANG ASQI',
-            companyName: data.companyName || 'Asosiasi Service Quality Indonesia (ASQI)',
-            description: data.description || '',
-          });
+      unsubData = onSnapshot(
+        collection(db, 'databoks'),
+        (snapshot) => {
+          setDataboksItems(snapshot.docs.map((d) => d.data() as DataboksItem));
+        },
+        (error) => {
+          console.warn('Firestore databoks snapshot listener error:', error);
         }
-      });
+      );
 
-      unsubAds = onSnapshot(doc(db, 'settings', 'global_ads'), (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.data() as GlobalAdsSettings;
-          setGlobalAds(data);
+      unsubMaint = onSnapshot(
+        doc(db, 'settings', 'maintenance'),
+        (snapshot) => {
+          if (snapshot.exists()) {
+            const data = snapshot.data();
+            setMaintenance({
+              enabled: !!data.enabled,
+              message: data.message || 'Website ASQI NEWS sedang dalam pemeliharaan sistem rutin.',
+            });
+          }
+        },
+        (error) => {
+          console.warn('Firestore maintenance snapshot listener error:', error);
         }
-      });
+      );
+
+      unsubCats = onSnapshot(
+        doc(db, 'settings', 'categories'),
+        (snapshot) => {
+          if (snapshot.exists()) {
+            const data = snapshot.data();
+            if (Array.isArray(data?.list) && data.list.length > 0) {
+              setCategories(data.list);
+            }
+          }
+        },
+        (error) => {
+          console.warn('Firestore categories snapshot listener error:', error);
+        }
+      );
+
+      unsubHeader = onSnapshot(
+        doc(db, 'settings', 'header'),
+        (snapshot) => {
+          if (snapshot.exists()) {
+            const data = snapshot.data() as HeaderSettings;
+            setHeaderSettings(data);
+          }
+        },
+        (error) => {
+          console.warn('Firestore header snapshot listener error:', error);
+        }
+      );
+
+      unsubAbout = onSnapshot(
+        doc(db, 'settings', 'about_asqi'),
+        (snapshot) => {
+          if (snapshot.exists()) {
+            const data = snapshot.data() as AboutAsqiData;
+            setAboutAsqiData({
+              logoUrl: data.logoUrl || '/asqi-logo-about.svg',
+              targetUrl: data.targetUrl || 'https://asqi.or.id/',
+              title: data.title || 'TENTANG ASQI',
+              companyName: data.companyName || 'Asosiasi Service Quality Indonesia (ASQI)',
+              description: data.description || '',
+            });
+          }
+        },
+        (error) => {
+          console.warn('Firestore about_asqi snapshot listener error:', error);
+        }
+      );
+
+      unsubAds = onSnapshot(
+        doc(db, 'settings', 'global_ads'),
+        (snapshot) => {
+          if (snapshot.exists()) {
+            const data = snapshot.data() as GlobalAdsSettings;
+            setGlobalAds(data);
+          }
+        },
+        (error) => {
+          console.warn('Firestore global_ads snapshot listener error:', error);
+        }
+      );
     } catch (err) {
       console.error('Firestore real-time subscription notice:', err);
     }
