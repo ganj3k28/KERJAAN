@@ -292,6 +292,20 @@ export default function App() {
       .catch(() => {});
   }, []);
 
+  const fetchMaintenance = useCallback(() => {
+    fetch('/api/maintenance')
+      .then((r) => r.json())
+      .then((res) => {
+        if (res?.success && res.maintenance) {
+          setMaintenance({
+            enabled: !!res.maintenance.enabled,
+            message: res.maintenance.message || 'Website ASQI NEWS sedang dalam pemeliharaan sistem rutin.',
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const handleOpenArticle = useCallback((art: NewsArticle) => {
     const newViews = (art.views || 0) + 1;
     const updatedArt = { ...art, views: newViews };
@@ -313,15 +327,18 @@ export default function App() {
     fetchBackendData();
     fetchCategories();
     fetchHeaderSettings();
+    fetchMaintenance();
 
     const pollInterval = setInterval(() => {
       fetchBackendData();
       fetchCategories();
       fetchHeaderSettings();
+      fetchMaintenance();
     }, 5000);
 
     const handleFocus = () => {
       fetchBackendData();
+      fetchMaintenance();
     };
 
     window.addEventListener('focus', handleFocus);
@@ -332,7 +349,7 @@ export default function App() {
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('visibilitychange', handleFocus);
     };
-  }, [fetchBackendData, fetchCategories, fetchHeaderSettings]);
+  }, [fetchBackendData, fetchCategories, fetchHeaderSettings, fetchMaintenance]);
 
   // Filter articles according to category and search query
   const filteredArticles = allArticles.filter((art) => {
@@ -401,6 +418,48 @@ export default function App() {
         onRefreshData={refreshLocalData}
         onNavigateHome={() => navigateTo('/')}
       />
+    );
+  }
+
+  // Render Maintenance Screen when Maintenance Mode is active (except for Admin)
+  if (maintenance.enabled) {
+    return (
+      <div style={{ minHeight: '100vh', backgroundColor: '#0f172a', color: '#ffffff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', textAlign: 'center' }}>
+        <div style={{ maxWidth: '600px', width: '100%', backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '36px 28px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+          <div style={{ width: '72px', height: '72px', backgroundColor: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px auto', color: '#f59e0b' }}>
+            <Wrench size={36} />
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+            <Logo className="h-10 text-white" />
+          </div>
+
+          <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#ffffff', margin: '0 0 12px 0' }}>
+            Situs Dalam Perawatan
+          </h1>
+
+          <div style={{ width: '50px', height: '4px', background: 'linear-gradient(to right, #ef4444, #f59e0b)', margin: '0 auto 20px auto', borderRadius: '2px' }} />
+
+          <p style={{ color: '#cbd5e1', fontSize: '14px', lineHeight: '1.6', margin: '0 0 24px 0' }}>
+            {maintenance.message}
+          </p>
+
+          <div style={{ padding: '12px', backgroundColor: '#0f172a', borderRadius: '8px', border: '1px solid #334155', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '13px', color: '#94a3b8', marginBottom: '24px' }}>
+            <RefreshCw size={15} style={{ color: '#f59e0b' }} />
+            <span>Sistem akan otomatis aktif kembali setelah pemeliharaan selesai.</span>
+          </div>
+
+          <div style={{ paddingTop: '16px', borderTop: '1px solid #334155', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', color: '#64748b', gap: '10px' }}>
+            <span>&copy; {new Date().getFullYear()} ASQI NEWS. All rights reserved.</span>
+            <button
+              onClick={() => navigateTo('/admin')}
+              style={{ background: 'none', border: 'none', color: '#38bdf8', cursor: 'pointer', fontSize: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'underline' }}
+            >
+              <Lock size={13} /> Login Redaksi / Admin
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 

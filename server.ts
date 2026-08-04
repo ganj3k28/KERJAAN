@@ -723,10 +723,14 @@ app.post('/api/categories', (req, res) => {
   }
 });
 
-// DELETE /api/categories/:name
-app.delete('/api/categories/:name', (req, res) => {
+// POST /api/categories/delete or DELETE /api/categories
+const handleDeleteCategoryLogic = (req: express.Request, res: express.Response) => {
   try {
-    const target = decodeURIComponent(req.params.name).trim();
+    const rawName = (req.query.name || req.body.name || req.params.name || '').toString().trim();
+    if (!rawName) {
+      return res.status(400).json({ success: false, message: 'Nama kategori wajib diisi' });
+    }
+    const target = decodeURIComponent(rawName).trim();
     const data = getStoreData();
     let currentCats: string[] = data.categories && data.categories.length > 0 ? data.categories : [...DEFAULT_CATEGORIES_LIST];
 
@@ -737,11 +741,15 @@ app.delete('/api/categories/:name', (req, res) => {
     // Sync to Firestore
     setDoc(doc(db, 'settings', 'categories'), { list: currentCats, updatedAt: new Date().toISOString() }).catch(() => {});
 
-    res.json({ success: true, categories: currentCats, message: `Kategori '${target}' berhasil dihapus` });
+    return res.json({ success: true, categories: currentCats, message: `Kategori '${target}' berhasil dihapus` });
   } catch (err: any) {
-    res.status(500).json({ success: false, message: err?.message || 'Gagal menghapus kategori' });
+    return res.status(500).json({ success: false, message: err?.message || 'Gagal menghapus kategori' });
   }
-});
+};
+
+app.delete('/api/categories', handleDeleteCategoryLogic);
+app.post('/api/categories/delete', handleDeleteCategoryLogic);
+app.delete('/api/categories/:name', handleDeleteCategoryLogic);
 
 // DEFAULT HEADER SETTINGS
 const DEFAULT_HEADER_SETTINGS = {

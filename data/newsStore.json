@@ -538,5 +538,23 @@
       "thumbnailUrl": "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=400&q=80",
       "videoUrl": "https://www.w3schools.com/html/mov_bbb.mp4"
     }
+  ],
+  "maintenance": {
+    "enabled": false,
+    "message": "Website ASQI NEWS sedang dalam pemeliharaan sistem rutin.",
+    "updatedAt": "2026-08-04T15:00:33.729Z"
+  },
+  "categories": [
+    "Beranda",
+    "Berita Terbaru",
+    "Nasional",
+    "Daerah",
+    "Pelayanan Publik",
+    "PROFIL TOKOH PELAYANAN",
+    "BUMN",
+    "BUMD",
+    "KORPORASI",
+    "Bisnis",
+    "ASQI"
   ]
 }

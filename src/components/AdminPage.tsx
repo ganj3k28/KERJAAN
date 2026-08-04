@@ -351,15 +351,17 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     if (!window.confirm(`Hapus kategori '${catName}' secara permanen?`)) return;
 
     try {
-      const res = await fetch(`/api/categories/${encodeURIComponent(catName)}`, {
-        method: 'DELETE',
+      const res = await fetch('/api/categories/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: catName }),
       }).then((r) => r.json());
 
-      if (res.success) {
+      if (res?.success) {
         setMsg({ type: 'success', text: `Kategori '${catName}' berhasil dihapus.` });
         if (onRefreshCategories) onRefreshCategories();
       } else {
-        setMsg({ type: 'error', text: res.message || 'Gagal menghapus kategori' });
+        setMsg({ type: 'error', text: res?.message || 'Gagal menghapus kategori' });
       }
     } catch {
       setMsg({ type: 'error', text: 'Gagal terhubung ke server saat menghapus kategori' });
@@ -1941,7 +1943,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
                 {effectiveCategories.map((cat) => {
                   const articleCount = articles.filter((a) => a.category.toLowerCase() === cat.toLowerCase()).length;
-                  const isDefault = ['Beranda', 'Berita Terbaru', 'Nasional', 'Daerah', 'Pelayanan Publik'].includes(cat);
+                  const isDefault = cat.toLowerCase() === 'beranda';
 
                   return (
                     <div
